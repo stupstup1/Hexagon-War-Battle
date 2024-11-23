@@ -8,13 +8,21 @@
     canvas {
       border: 1px solid #000;
     }
+	.lobby_id_container {
+			width: 100%;
+			display: flex;
+			justify-content: center;
+        }
   </style>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
 
+<div class="lobby_id_container">Lobby:&nbsp;<div id="lobby_id"></div></div>
+
 <canvas id="ctx"></canvas>
 <script src="/socket.io/socket.io.js"></script>
+
 <script src="/js/grid.js"></script>
 
 </body>

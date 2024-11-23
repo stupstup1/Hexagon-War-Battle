@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	
+
 	var canvas = document.getElementById("ctx");
 	var ctx = canvas.getContext("2d");
 
@@ -27,14 +27,18 @@ $(document).ready(function() {
 	// Socket.IO setup
 	var socket = io();
 
-	socket.on('newPositions', function(data){
-	ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas
-	drawHexagonalGrid();  // Redraw grid
+	socket.on('gameStarted', function(data){
+		$("#lobby_id").text(data.lobbyId)
+	});
 
-	 // Redraw the hovered hexagon, if any
-	if (hoveredHex) {
-	  highlightHexagon(hoveredHex);  // Highlight hovered hexagon
-	}
+	socket.on('frameUpdate', function(data){
+		ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas
+		drawHexagonalGrid();  // Redraw grid
+
+		 // Redraw the hovered hexagon, if any
+		if (hoveredHex) {
+		  highlightHexagon(hoveredHex);  // Highlight hovered hexagon
+		}
 	});
 
 	// Mouse hover and click detection variables
