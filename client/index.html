@@ -8,21 +8,71 @@
     canvas {
       border: 1px solid #000;
     }
-	.lobby_id_container {
-			width: 100%;
-			display: flex;
-			justify-content: center;
-        }
+	
+    #nameInputContainer {
+      display: none;
+      text-align: center;
+    }
+
+    .playerNameInput {
+      position: absolute;
+      top: 10px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+	
+    .heading_container {
+	  display: flex;
+	  justify-content: space-between;
+	  width: 100%;
+    }
+	
+	.endTurnButton {
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		padding: 10px 20px;
+		border-radius: 5px;
+		cursor: pointer;
+		display: none;
+	}
+
+    .left {
+	  text-align: left;
+    }
+
+    .center {
+	  text-align: center;
+	  flex-grow: 1;
+    }
+
+    .right {
+	  text-align: right;
+    }
   </style>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
 
-<div class="lobby_id_container">Lobby:&nbsp;<div id="lobby_id"></div></div>
-
+<div id="nameInputContainer">
+  <input type="text" id="playerNameInput" placeholder="Enter your name" />
+  <button id="submitNameBtn">Submit</button>
+</div>
+<div class="heading_container">
+	<div class="left"><u>Player 1</u><div id="player1Name"></div></div>
+	<div class="center"><u>Lobby ID</u><div id="lobby_id"></div></div>
+	<div class="right"><u>Player 2</u><div id="player2Name"></div></div>
+</div>
+<button class="endTurnButton" id="endTurnBtn">End Turn</button>
 <canvas id="ctx"></canvas>
-<script src="/socket.io/socket.io.js"></script>
 
+<script src="/socket.io/socket.io.js"></script>
+<script>
+var socket = io(); // Establish a connection only once
+window.socket = socket;  // Make it globally available for other scripts
+</script>
+
+<script src="/js/lobby.js"></script>
 <script src="/js/grid.js"></script>
 
 </body>

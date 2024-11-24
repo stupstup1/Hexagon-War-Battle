@@ -11,36 +11,16 @@ app.get('/', function(req, res) {
 serv.listen(2000);
 console.log("Server started.");
 
-// Import classes
-const { Entity, Player } = require('./Entity');
+// Import the lobby manager
 var lobbyManager = require('./server/lobby'); // Import the lobby manager
-
-// Lobby system: Array to hold active lobbies
-var SOCKET_LIST = {};
 
 var io = require('socket.io')(serv, {});
 io.sockets.on('connection', function(socket) {
-    socket.id = Math.random();
-    SOCKET_LIST[socket.id] = socket;
-
-    // Handle player connection
-    Player.onConnect(socket);
-
-    // Find or create a lobby for the new player
-	var lobby = lobbyManager.assignPlayerToLobby(socket);
+    // Delegate the connection handling to lobby manager
+    lobbyManager.handlePlayerConnection(socket, io);
 
     socket.on('disconnect', function() {
-        delete SOCKET_LIST[socket.id];
-        Player.onDisconnect(socket);
-    })
+        lobbyManager.handlePlayerDisconnect(socket, io);
+    });
 });
 
-setInterval(function() {
-    var pack = {
-        player: Player.update(),
-    };
-    for (var i in SOCKET_LIST) {
-        var socket = SOCKET_LIST[i];
-        socket.emit('frameUpdate', pack);
-    }
-}, 1000 / 60);
