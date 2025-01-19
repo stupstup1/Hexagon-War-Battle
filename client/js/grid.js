@@ -2,10 +2,14 @@ $(document).ready(function() {
 
     var canvas = document.getElementById("ctx");
     var ctx = canvas.getContext("2d");
+	var canvas_units = document.getElementById("ctx_units");
+	var ctx_units = canvas_units.getContext("2d");
 
     // Adjust canvas to fill window width and height
     canvas.width = window.innerWidth/1.01;
     canvas.height = window.innerHeight/1.1;
+	canvas_units.width = window.innerWidth/1.01;
+	canvas_units.height = window.innerHeight/1.1;
 
     // Dynamic size based on canvas width
     const radius = Math.floor(canvas.width / 40);  // Adjust size based on canvas width
@@ -22,6 +26,11 @@ $(document).ready(function() {
 
     // Array to store hexagons for hover and click detection
     const hexagons = [];
+	var clickedHexagon;
+	const clickedColor = 'blue';
+	var highlightedHexagon;
+	const highlightedColor = 'yellow';
+	const defaultColor = 'lightblue';
 
     // Socket.IO setup
     var socket = window.socket; // Use the existing global socket
@@ -42,34 +51,19 @@ $(document).ready(function() {
     let hoveredHex = null;  // Track the hexagon being hovered over
 
     // Mouse event listeners
-    canvas.addEventListener('mousemove', (event) => {
-        const mouseX = event.offsetX;
-        const mouseY = event.offsetY;
-
-        hoveredHex = null;  // Reset hovered hexagon on each move
-
-        // Check which hexagon the mouse is over
-        hexagons.forEach(hex => {
-            if (isPointInHexagon(mouseX, mouseY, hex)) {
-                hoveredHex = hex;
-            }
-        });
-
-        // Redraw the grid and highlight the hovered hexagon if necessary
-        drawHexagonalGrid();
-        if (hoveredHex) {
-            highlightHexagon(hoveredHex);  // Highlight hovered hexagon
-        }
+    canvas_units.addEventListener('mousemove', (event) => {
+		highlightedHexagon = detectHexagon(event, 'yellow');
+		drawHexagonalGrid();
     });
-
-    // If the mouse is still and over a hexagon, it will remain highlighted
-    canvas.addEventListener('mouseout', () => {
-        hoveredHex = null;  // Reset when the mouse leaves the canvas
-        drawHexagonalGrid(); // Redraw grid without highlighting
+	
+	// Mouse event listeners
+    canvas_units.addEventListener('click', (event) => {
+		clickedHexagon = detectHexagon(event, clickedColor);
+		drawHexagonalGrid();
     });
 
     // Highlight a hexagon
-    function highlightHexagon(hex) {
+    function highlightHexagon(hex, fillColor) {
         ctx.beginPath();
         ctx.moveTo(hex.x + radius, hex.y);  // Starting point
         for (let i = 1; i < 6; i++) {
@@ -77,7 +71,10 @@ $(document).ready(function() {
             ctx.lineTo(hex.x + radius * Math.cos(angle), hex.y + radius * Math.sin(angle));
         }
         ctx.closePath();
-        ctx.fillStyle = 'yellow';  // Highlighted color
+		ctx.fillStyle = 'yellow';  // Highlighted color
+        if (fillColor){
+			ctx.fillStyle = fillColor
+		}
         ctx.fill();
         ctx.stroke();
     }
@@ -87,7 +84,6 @@ $(document).ready(function() {
         const angle = Math.PI / 3;  // 60 degrees
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
-			
 			//Draw Hexagon
             let angleOffset = angle * i;
             let xPos = x + radius * Math.cos(angleOffset);
@@ -95,6 +91,15 @@ $(document).ready(function() {
             if (i === 0) ctx.moveTo(xPos, yPos);
             else ctx.lineTo(xPos, yPos);
 		}
+        ctx.closePath();
+		ctx.fillStyle = defaultColor;  // Default color
+		if (clickedHexagon && clickedHexagon.x == x && clickedHexagon.y == y){
+			ctx.fillStyle = clickedColor;  // Don't override clicked hexagon
+		} else if (highlightedHexagon && highlightedHexagon.x == x && highlightedHexagon.y == y){
+			ctx.fillStyle = highlightedColor;  // Don't override clicked hexagon
+		}
+        ctx.fill();
+        ctx.stroke();
 		
 		//If entityToDraw, draw entity
 		if (entityToDraw) {
@@ -103,13 +108,10 @@ $(document).ready(function() {
 			const img = new Image();
 			img.src = 'img/' + playerNumber + entityToDraw + '.png';
 			img.onload = function() {
-				ctx.drawImage(img, entX, entY, 75, 75);
+				ctx_units.drawImage(img, entX, entY, 75, 75);
+				ctx_units.clearRect();
 			};
         }
-        ctx.closePath();
-        ctx.fillStyle = 'lightblue';  // Default color
-        ctx.fill();
-        ctx.stroke();
     }
 
     // Draw the entire hexagonal grid
@@ -185,5 +187,21 @@ $(document).ready(function() {
 
         return inside;
     }
+	
+	function detectHexagon(event, fillColor) {
+        const mouseX = event.offsetX;
+        const mouseY = event.offsetY;
+
+        hexagonOfInterest = null;  // Reset hovered hexagon on each move
+
+        // Check which hexagon the mouse is over
+        hexagons.forEach(hex => {
+            if (isPointInHexagon(mouseX, mouseY, hex)) {
+                hexagonOfInterest = hex;
+            }
+        });
+		
+		return hexagonOfInterest;
+	}
 
 });
