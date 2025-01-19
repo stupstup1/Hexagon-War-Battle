@@ -38,7 +38,7 @@ $(document).ready(function() {
         }
     });
 	
-	// Handle name submission when the player clicks submit
+	// Handle end turn  when the player clicks end turn
     document.getElementById('endTurnBtn').addEventListener('click', endTurn);
 	
     // Handle name submission when the player clicks submit

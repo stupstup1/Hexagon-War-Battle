@@ -1,9 +1,13 @@
+// Import the Entity class
+const { Entity } = require('./entity');
+
 class Player {
     constructor(socket) {
         this.socket = socket;
         this.name = '';
 		this.playerNumber = 0;
         this.turn = false;  // Indicates if it's the player's turn
+		this.units_array = []
     }
 		
 	setTurn(isTurn) {
@@ -14,6 +18,11 @@ class Player {
 	setName(name) {
         this.name = name;
     }
+	
+	addUnit(unit) {	
+		this.units_array.push(unit)
+	}
+		
 }
 
 module.exports = { Player };

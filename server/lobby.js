@@ -1,5 +1,6 @@
 // Import the Player class
 const { Player } = require('./player');
+const { Leader } = require('./entity');
 
 // Lobby class to manage players and game state
 class Lobby {
@@ -8,6 +9,7 @@ class Lobby {
         this.players = []; // Array to store players (sockets)
         this.maxPlayers = 2; // Max players per lobby (change as necessary)
         this.gameStarted = false; // Track if the game has started
+		this.updateInterval = 1000 / 60;  // 1000 ms / 60 FPS = ~16.67 ms per frame
     }
 
     // Add a player to the lobby and emit a name request
@@ -28,13 +30,32 @@ class Lobby {
         this.players[0].setTurn(true);  // Player 1's turn
         this.players[1].setTurn(false); // Player 2's turn
 		
-		//prepare data to send out
+		// prepare data to send out
 		let lobbyId = this.id;
 		let player1Name = this.players[0].name;
 		let player2Name = this.players[1].name;
-
+		
+		// spawn leader units for each player
+		const leader1 = new Leader(0, 3)
+		const leader2 = new Leader(14, 3)
+		
+		this.players[0].addUnit(leader1);
+		this.players[1].addUnit(leader2);
+		
+		// start the game
         this.players.forEach((player) => {
 			player.socket.emit('gameStarted', { lobbyId, player1Name, player2Name });
+
+
+					
+			// Send updates every 16.67 ms (60 FPS)
+			setInterval(() => { 
+				if (this.players.length !== 2) { return; }
+				player.socket.emit('frameUpdate', { 
+					player1: this.players[0].units_array, 
+					player2: this.players[1].units_array
+				}); 
+			}, this.updateInterval);
         });
     }
 }

@@ -18,7 +18,7 @@ $(document).ready(function() {
 
     // Limit to a 7x7 grid
     const rows = 7;
-    const cols = 7;
+    const cols = 15;
 
     // Array to store hexagons for hover and click detection
     const hexagons = [];
@@ -28,7 +28,9 @@ $(document).ready(function() {
 
     socket.on('frameUpdate', function(data){
         ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas
-        drawHexagonalGrid();  // Redraw grid
+        drawHexagonalGrid(data);  // Redraw grid
+
+		console.log(data)
 
         // Redraw the hovered hexagon, if any
         if (hoveredHex) {
@@ -81,15 +83,28 @@ $(document).ready(function() {
     }
 
     // Draw a single hexagon
-    function drawHexagon(x, y, radius) {
+    function drawHexagon(x, y, radius, entityToDraw, playerNumber) {
         const angle = Math.PI / 3;  // 60 degrees
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
+			
+			//Draw Hexagon
             let angleOffset = angle * i;
             let xPos = x + radius * Math.cos(angleOffset);
             let yPos = y + radius * Math.sin(angleOffset);
             if (i === 0) ctx.moveTo(xPos, yPos);
             else ctx.lineTo(xPos, yPos);
+		}
+		
+		//If entityToDraw, draw entity
+		if (entityToDraw) {
+			let entX = x - radius + 5
+			let entY = y - radius + 5
+			const img = new Image();
+			img.src = 'img/' + playerNumber + entityToDraw + '.png';
+			img.onload = function() {
+				ctx.drawImage(img, entX, entY, 75, 75);
+			};
         }
         ctx.closePath();
         ctx.fillStyle = 'lightblue';  // Default color
@@ -98,7 +113,7 @@ $(document).ready(function() {
     }
 
     // Draw the entire hexagonal grid
-    function drawHexagonalGrid() {
+    function drawHexagonalGrid(data) {
         hexagons.length = 0;  // Clear previous hexagon data
 
         // Calculate the total width and height of the grid
@@ -122,8 +137,31 @@ $(document).ready(function() {
                     y += hexHeight / 2;
                 }
 
+				let entityToDraw;
+				let playerNumber;
+				let found;
+				
+				// Detect if there's an entity at these coordinates
+				for (let playerKey in data) {
+				  let player = data[playerKey];
+				  // Loop through each entity of the player
+				  for (let i in player) {
+					let entity = player[i];
+					// Check if the entity's coords match the target (x, y)
+					if (entity.coords.x === col && entity.coords.y === row) {
+						entityToDraw = entity.type;
+						playerNumber = playerKey;
+						break;  // Exit the loop once a match is found
+					}
+				  }
+
+				  if (found) {
+					break;  // Exit the player loop if we already found a match
+				  }
+				}
+				
                 // Draw the hexagon
-                drawHexagon(x, y, radius);
+                drawHexagon(x, y, radius, entityToDraw, playerNumber);
 
                 // Store hexagon data (x, y position, and unique id)
                 hexagons.push({ x, y, radius, id: `${row}-${col}` });
@@ -148,6 +186,4 @@ $(document).ready(function() {
         return inside;
     }
 
-    // Initial call to draw the grid
-    drawHexagonalGrid();
 });
