@@ -22,7 +22,25 @@ class Player {
 	addUnit(unit) {	
 		this.units_array.push(unit)
 	}
-		
+	
+    clearUnits() {
+        this.units_array = [];
+    }
+	
+    moveUnit(fromHex, toHex) {
+        for (var i in this.units_array) {
+            const unit = this.units_array[i];
+            if (fromHex && toHex && unit.coords.x == fromHex.col && unit.coords.y == fromHex.row) {
+                unit.coords = {
+                    x: toHex.col,
+                    y: toHex.row
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 module.exports = { Player };

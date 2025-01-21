@@ -35,7 +35,7 @@ class Lobby {
 		let player1Name = this.players[0].name;
 		let player2Name = this.players[1].name;
 		
-		// spawn leader units for each player
+		// spawn leader farm and barracks for each player
 		const leader1 = new Leader(0, 3);
 		const farm1 = new Farm(0, 2);
 		const barracks1 = new Barracks(0, 4);
@@ -43,25 +43,32 @@ class Lobby {
 		const farm2 = new Farm(14, 2);
 		const barracks2 = new Barracks(14, 4);
 		
-		this.players[0].addUnit(leader1);
-		this.players[0].addUnit(farm1);
-		this.players[0].addUnit(barracks1);
-		this.players[1].addUnit(leader2);
-		this.players[1].addUnit(farm2);
-		this.players[1].addUnit(barracks2);
+        this.players[0].clearUnits();
+        this.players[0].addUnit(leader1);
+        this.players[0].addUnit(farm1);
+        this.players[0].addUnit(barracks1);
+
+        this.players[1].clearUnits();
+        this.players[1].addUnit(leader2);
+        this.players[1].addUnit(farm2);
+        this.players[1].addUnit(barracks2);
 		
 		// start the game
         this.players.forEach((player) => {
 			player.socket.emit('gameStarted', { lobbyId, player1Name, player2Name });
-	
-			// Send updates every 16.67 ms (60 FPS)
-			// setInterval(() => { 
-				if (this.players.length !== 2) { return; }
-				player.socket.emit('frameUpdate', { 
-					player1: this.players[0].units_array, 
-					player2: this.players[1].units_array
-				}); 
-			// }, this.updateInterval);
+        });
+
+        this.sendBoardUpdate();
+    }
+
+    sendBoardUpdate() {
+        if (this.players.length !== 2) { return; }
+
+        this.players.forEach((player) => {
+            player.socket.emit('frameUpdate', { 
+                player1: this.players[0].units_array, 
+                player2: this.players[1].units_array
+            }); 
         });
     }
 }
@@ -135,6 +142,21 @@ class LobbyManager {
                 player.setTurn(false);
                 nextPlayer.setTurn(true);
             }
+        });
+
+        // Switch whose turn it is upon 'end turn' button press
+        socket.on('moveEntity', function(data) {
+            const { fromHex, toHex } = data;
+
+            for (var i in lobby.players) {
+                const player = lobby.players[i];
+                const moved = player.moveUnit(fromHex, toHex);
+                if (moved) {
+                    break;
+                }
+            }
+
+            lobby.sendBoardUpdate();
         });
     }
 
