@@ -31,9 +31,9 @@ $(document).ready(function() {
     // Array to store hexagons for hover and click detection
     const hexagons = [];
 	var clickedHexagon;
-	const clickedColor = 'blue';
+	const clickedColor = 'yellow';
 	var highlightedHexagon;
-	const highlightedColor = 'yellow';
+	const highlightedColor = 'lightyellow';
 	const defaultColor = 'lightblue';
 
     // Entity tracking
@@ -98,14 +98,7 @@ $(document).ready(function() {
     // Draw a single hexagon
     function drawHexagon(col, row, radius) {
         // Calculate the center position of the hexagon
-        let x = marginLeft + col * xOffset;
-        let y = marginTop + row * yOffset;
-
-        // Adjust vertical placement to ensure the correct "touching" behavior for horizontal hexagons
-        if (col % 2 === 1) {
-            // Offset every other column (odd columns) vertically to achieve the "touching" effect
-            y += hexHeight / 2;
-        }
+        const [x, y] = rowColToXandY(col, row);
 
         const angle = Math.PI / 3;  // 60 degrees
         ctx.beginPath();
@@ -205,8 +198,7 @@ $(document).ready(function() {
 		//If entityToDraw, draw entity
 
         // Calculate the center position of the hexagon
-        let x = marginLeft + col * xOffset;
-        let y = marginTop + row * yOffset;
+        const [x, y] = rowColToXandY(col, row);
         let entX = x - radius + 5
         let entY = y - radius + 5
         const img = new Image();
@@ -222,5 +214,19 @@ $(document).ready(function() {
 
     function moveEntity(fromHex, toHex) {
         socket.emit('moveEntity', {fromHex: fromHex, toHex: toHex});
+    }
+
+    function rowColToXandY(col, row) {
+        // Calculate the center position of the hexagon
+        let x = marginLeft + col * xOffset;
+        let y = marginTop + row * yOffset;
+
+        // Adjust vertical placement to ensure the correct "touching" behavior for horizontal hexagons
+        if (col % 2 === 1) {
+            // Offset every other column (odd columns) vertically to achieve the "touching" effect
+            y += hexHeight / 2;
+        }
+
+        return [x, y];
     }
 });
