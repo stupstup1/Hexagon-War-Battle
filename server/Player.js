@@ -8,6 +8,7 @@ class Player {
 		this.playerNumber = 0;
         this.turn = false;  // Indicates if it's the player's turn
 		this.units_array = []
+		this.base_actions = 3
     }
 		
 	setTurn(isTurn) {

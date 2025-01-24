@@ -38,22 +38,20 @@ $(document).ready(function() {
 
     // Entity tracking
     var entities = [];
-
+	var entityData = [];
+	
     // Socket.IO setup
     var socket = window.socket; // Use the existing global socket
 
     socket.on('frameUpdate', function(playerData){
-        drawHexagonalGrid();  // Redraw grid
-
-        console.log(playerData);
+        drawScreen();  // Redraw grid
         updateEntities(playerData);
-
-        console.log(entities);
 
         // Redraw the hovered hexagon, if any
         if (hoveredHex) {
             highlightHexagon(hoveredHex);  // Highlight hovered hexagon
         }
+					
     });
 
     // Mouse hover and click detection variables
@@ -62,21 +60,34 @@ $(document).ready(function() {
     // Mouse event listeners
     canvas_units.addEventListener('mousemove', (event) => {
 		highlightedHexagon = detectHexagon(event);
-		drawHexagonalGrid();
+		drawScreen();
     });
 	
-	// Mouse event listeners
+ 	// Mouse event listeners
     canvas_units.addEventListener('click', (event) => {
         const previousClickHadEntity = isEntityInHex(clickedHexagon);
         const previousClickedHex = clickedHexagon;
+		
+		//selects a hexagon when clicking. If clicking previously selected hexagon, unselect it!
 		clickedHexagon = detectHexagon(event);
+		if (JSON.stringify(previousClickedHex) === JSON.stringify(clickedHexagon)) {
+			clickedHexagon = null
+		}
+		
+ 		//move action
         const currentClickHasEntity = isEntityInHex(clickedHexagon);
-
         if (previousClickHadEntity && !currentClickHasEntity) {
             moveEntity(previousClickedHex, clickedHexagon);
         }
-		drawHexagonalGrid();
-    });
+		
+		//Display actions to choose from
+		if (clickedHexagon) {
+			drawActionIcons(clickedHexagon)
+		}
+		
+		//update the fuckig screen
+		drawScreen();
+    }); 
 
     // Highlight a hexagon
     function highlightHexagon(hex, fillColor) {
@@ -124,7 +135,7 @@ $(document).ready(function() {
     }
 
     // Draw the entire hexagonal grid
-    function drawHexagonalGrid() {
+    function drawScreen() {
         hexagons.length = 0;  // Clear previous hexagon data
         ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas
 
@@ -135,6 +146,14 @@ $(document).ready(function() {
                 hexagons.push(drawHexagon(col, row, radius));
             }
         }
+		
+		//Display actions remaining and food
+		ctx.font = '24px Arial';
+		ctx.fillStyle = 'black';
+		actionsRemaining = 3
+		ctx.fillText('Remaining Actions: ' + actionsRemaining, 10, 30); // The numbers (10, 30) are the x and y coordinates
+		food = 5
+		ctx.fillText("Food: " + food, 10, 70); // The numbers (10, 30) are the x and y coordinates
     }
 
     // Check if a point (mouse) is inside a hexagon
@@ -173,7 +192,8 @@ $(document).ready(function() {
     function updateEntities(playerData) {
         // clear entities
         entities = Array.from(Array(rows), () => new Array(cols));
-        ctx_units.clearRect(0, 0, canvas_units.width, canvas_units.height);  // Clear canvas
+		entityData = Array.from(Array(rows), () => new Array(cols));
+        ctx_units.clearRect(canvas_units.width/15, 0, canvas_units.width, canvas_units.height);  // Clear canvas, not action icons
         
         // for each player
         for (let playerKey in playerData) {
@@ -186,6 +206,7 @@ $(document).ready(function() {
                 const row = entity.coords.y;
                 // add to the entities array
                 entities[row][col] = [entityType, playerKey];
+				entityData[row][col] = entity
 
                 // then draw the entity
                 drawEntity(col, row, entityType, playerKey);
@@ -207,14 +228,46 @@ $(document).ready(function() {
             ctx_units.drawImage(img, entX, entY, 75, 75);
         };
     }
+	
+	//Display actions to choose from if an entity is selected
+	async function drawActionIcons(clickedHexagon) {
+		
+		ctx_units.clearRect(0, 0, canvas_units.width/15, canvas_units.height);  // Clear actions side of canvas, not units
+        if (isEntityInHex(clickedHexagon)) {
+			entity = entityData[clickedHexagon.row][clickedHexagon.col]
+			console.log(entity)
+        }
+        if (!entity) { return; } //quit if no entity found
+		
+		//for each action type on the entity, draw the icon
+		console.log('waht')
+		loopIteration = 0
+		for (let actionType of entity.action_array) {
+			// Calculate the Y position
+			loopIteration += 1;
+			let y = (loopIteration * 80) + 10;
+			// Create a new Image and return a Promise that resolves when the image is loaded
+			const img = new Image();
+			img.src = 'img/action' + actionType + '.png';
+			// Wait for the image to load before proceeding to the next action
+			await new Promise((resolve, reject) => {
+				img.onload = () => {
+					ctx_units.drawImage(img, 10, y, 75, 75);
+					resolve();  // Image has finished loading, resolve the Promise
+				};
+
+				img.onerror = reject;  // Reject the Promise if an error occurs
+			});
+		}
+	}
 
     function isEntityInHex(hex) {
         return hex && !!entities[hex.row][hex.col];
     }
 
-    function moveEntity(fromHex, toHex) {
-        socket.emit('moveEntity', {fromHex: fromHex, toHex: toHex});
-    }
+	function moveEntity(fromHex, toHex) {
+		socket.emit('moveEntity', { fromHex: fromHex, toHex: toHex });
+	}
 
     function rowColToXandY(col, row) {
         // Calculate the center position of the hexagon

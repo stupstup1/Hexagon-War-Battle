@@ -144,7 +144,7 @@ class LobbyManager {
             }
         });
 
-        // Switch whose turn it is upon 'end turn' button press
+        // Move entity
         socket.on('moveEntity', function(data) {
             const { fromHex, toHex } = data;
 
