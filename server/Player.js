@@ -28,19 +28,22 @@ class Player {
         this.units_array = [];
     }
 	
-    moveUnit(fromHex, toHex) {
-        for (var i in this.units_array) {
+	getUnitToMove(fromHex) {
+		for (var i in this.units_array) {
             const unit = this.units_array[i];
-            if (fromHex && toHex && unit.coords.x == fromHex.col && unit.coords.y == fromHex.row) {
-                unit.coords = {
-                    x: toHex.col,
-                    y: toHex.row
-                }
-                return true;
+            if (fromHex && unit.coords.x == fromHex.col && unit.coords.y == fromHex.row) {
+				return i;
             }
         }
-
-        return false;
+		
+		return -1;
+	}
+	
+    moveUnit(unitIndex, toHex) {
+        this.units_array[unitIndex].coords = {
+			x: toHex.col,
+			y: toHex.row
+		};
     }
 }
 

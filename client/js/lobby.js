@@ -1,3 +1,5 @@
+var PLAYERNUMBER;
+
 $(document).ready(function() {
     socket = window.socket;  // Use the global socket object
     playerName = '';
@@ -21,6 +23,8 @@ $(document).ready(function() {
         lobbyId = data.lobbyId;
 		player1Name = data.player1Name
 		player2Name = data.player2Name
+		
+		PLAYERNUMBER = data.playerNumber;
 		
 		//Set elements with received data
         document.getElementById('lobby_id').textContent = lobbyId;

@@ -55,11 +55,27 @@ class Lobby {
 		
 		// start the game
         this.players.forEach((player) => {
-			player.socket.emit('gameStarted', { lobbyId, player1Name, player2Name });
+			
+			player.socket.emit('gameStarted', { lobbyId, player1Name, player2Name, playerNumber: this.getPlayerNumber(player) });
+			
         });
 
         this.sendBoardUpdate();
     }
+	
+	getPlayerNumber(player)
+	{
+		let playerNum;
+		
+		this.players.forEach((curPlayer, i) => {
+			if (curPlayer.socket === player.socket)
+			{
+				playerNum = `player${i + 1}`
+			}
+		});
+		
+		return playerNum;
+	}
 
     sendBoardUpdate() {
         if (this.players.length !== 2) { return; }
@@ -147,16 +163,22 @@ class LobbyManager {
         // Move entity
         socket.on('moveEntity', function(data) {
             const { fromHex, toHex } = data;
-
+			
+			var moved;
             for (var i in lobby.players) {
                 const player = lobby.players[i];
-                const moved = player.moveUnit(fromHex, toHex);
-                if (moved) {
-                    break;
-                }
+				const unitIndex = player.getUnitToMove(fromHex);
+				if (unitIndex == -1 || player.socket !== socket) { continue; } // prevent moving units not owned by player
+				if (!player.turn) {continue; } // prevent moving units if its not your turn
+				
+				player.moveUnit(unitIndex,toHex);
+				moved = true;
             }
 
-            lobby.sendBoardUpdate();
+			if (moved)
+			{
+				lobby.sendBoardUpdate();
+			}
         });
     }
 
