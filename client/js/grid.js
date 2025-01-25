@@ -240,6 +240,8 @@ $(document).ready(function() {
 	function drawActionIcons(clickedHexagon) {
 		let entity;
 		ctx_units.clearRect(0, 0, canvas_units.width/15, canvas_units.height);  // Clear actions side of canvas, not units
+		playerKey = getPlayerKeyAtHex(clickedHexagon)
+		if (playerKey != PLAYERNUMBER) {return;} //quit if it's not ur unit
 		
         if (clickedHexagon) {
 			entity = getEntityAtHex(clickedHexagon)
@@ -260,6 +262,13 @@ $(document).ready(function() {
 			};
 		}
 	}
+
+    function getPlayerKeyAtHex(hex) {
+		if (hex && entities[hex.row][hex.col])
+		{
+			return entities[hex.row][hex.col][1];
+		}
+    }
 
     function getEntityAtHex(hex) {
 		if (hex && entities[hex.row][hex.col])
