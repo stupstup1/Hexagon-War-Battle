@@ -34,18 +34,18 @@ $(document).ready(function() {
 	const clickedColor = 'yellow';
 	var highlightedHexagon;
 	const highlightedColor = 'lightyellow';
+	const highlightedColorCanMove = 'lightgreen';
 	const defaultColor = 'lightblue';
 
     // Entity tracking
     var entities = [];
-	var entityData = [];
 	
     // Socket.IO setup
     var socket = window.socket; // Use the existing global socket
 
     socket.on('frameUpdate', function(playerData){
-        drawScreen();  // Redraw grid
         updateEntities(playerData);
+        drawScreen();  // Redraw grid
 
         // Redraw the hovered hexagon, if any
         if (hoveredHex) {
@@ -64,25 +64,25 @@ $(document).ready(function() {
     });
 	
  	// Mouse event listeners
+	// We only want to redraw action icons if we don't move
     canvas_units.addEventListener('click', (event) => {
-        const previousClickHadEntity = isEntityInHex(clickedHexagon);
+        const previousClickEntity = getEntityAtHex(clickedHexagon);
         const previousClickedHex = clickedHexagon;
 		
 		//selects a hexagon when clicking. If clicking previously selected hexagon, unselect it!
 		clickedHexagon = detectHexagon(event);
-		if (JSON.stringify(previousClickedHex) === JSON.stringify(clickedHexagon)) {
-			clickedHexagon = null
-		}
 		
  		//move action
-        const currentClickHasEntity = isEntityInHex(clickedHexagon);
-        if (previousClickHadEntity && !currentClickHasEntity) {
+        const currentClickEntity = getEntityAtHex(clickedHexagon);
+        if (previousClickEntity && !currentClickEntity && canMove(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
             moveEntity(previousClickedHex, clickedHexagon);
-        }
-		
-		//Display actions to choose from
-		if (clickedHexagon) {
-			drawActionIcons(clickedHexagon)
+        } else
+		{
+			if (areHexesEqual(previousClickedHex,clickedHexagon)) {
+				clickedHexagon = null
+			}
+			//Display actions to choose from
+			drawActionIcons(clickedHexagon);
 		}
 		
 		//update the fuckig screen
@@ -121,8 +121,16 @@ $(document).ready(function() {
             if (i === 0) ctx.moveTo(xPos, yPos);
             else ctx.lineTo(xPos, yPos);
 		}
+		
+		const currentHex = { x, y, radius, col: col, row: row, id: `${row}-${col}` };
         ctx.closePath();
-		ctx.fillStyle = defaultColor;  // Default color
+		const clickedEntity = getEntityAtHex(clickedHexagon);
+		if (clickedEntity && canMove(clickedHexagon,currentHex, clickedEntity.movement_speed)) {
+				ctx.fillStyle = highlightedColorCanMove;
+		} else {
+			ctx.fillStyle = defaultColor;  // Default color
+		}
+		
 		if (clickedHexagon && clickedHexagon.x == x && clickedHexagon.y == y){
 			ctx.fillStyle = clickedColor;  // Don't override clicked hexagon
 		} else if (highlightedHexagon && highlightedHexagon.x == x && highlightedHexagon.y == y){
@@ -131,7 +139,7 @@ $(document).ready(function() {
         ctx.fill();
         ctx.stroke();
 
-        return { x, y, radius, col: col, row: row, id: `${row}-${col}` };
+        return currentHex;
     }
 
     // Draw the entire hexagonal grid
@@ -192,7 +200,6 @@ $(document).ready(function() {
     function updateEntities(playerData) {
         // clear entities
         entities = Array.from(Array(rows), () => new Array(cols));
-		entityData = Array.from(Array(rows), () => new Array(cols));
         ctx_units.clearRect(canvas_units.width/15, 0, canvas_units.width, canvas_units.height);  // Clear canvas, not action icons
         
         // for each player
@@ -205,8 +212,7 @@ $(document).ready(function() {
                 const col = entity.coords.x;
                 const row = entity.coords.y;
                 // add to the entities array
-                entities[row][col] = [entityType, playerKey];
-				entityData[row][col] = entity
+                entities[row][col] = [entityType, playerKey, entity];
 
                 // then draw the entity
                 drawEntity(col, row, entityType, playerKey);
@@ -230,17 +236,16 @@ $(document).ready(function() {
     }
 	
 	//Display actions to choose from if an entity is selected
-	async function drawActionIcons(clickedHexagon) {
-		
+	function drawActionIcons(clickedHexagon) {
+		let entity;
 		ctx_units.clearRect(0, 0, canvas_units.width/15, canvas_units.height);  // Clear actions side of canvas, not units
-        if (isEntityInHex(clickedHexagon)) {
-			entity = entityData[clickedHexagon.row][clickedHexagon.col]
-			console.log(entity)
+		
+        if (clickedHexagon) {
+			entity = getEntityAtHex(clickedHexagon)
         }
         if (!entity) { return; } //quit if no entity found
 		
 		//for each action type on the entity, draw the icon
-		console.log('waht')
 		loopIteration = 0
 		for (let actionType of entity.action_array) {
 			// Calculate the Y position
@@ -249,25 +254,18 @@ $(document).ready(function() {
 			// Create a new Image and return a Promise that resolves when the image is loaded
 			const img = new Image();
 			img.src = 'img/action' + actionType + '.png';
-			// Wait for the image to load before proceeding to the next action
-			await new Promise((resolve, reject) => {
-				img.onload = () => {
-					ctx_units.drawImage(img, 10, y, 75, 75);
-					resolve();  // Image has finished loading, resolve the Promise
-				};
-
-				img.onerror = reject;  // Reject the Promise if an error occurs
-			});
+			img.onload = () => {
+				ctx_units.drawImage(img, 10, y, 75, 75);
+			};
 		}
 	}
 
-    function isEntityInHex(hex) {
-        return hex && !!entities[hex.row][hex.col];
+    function getEntityAtHex(hex) {
+		if (hex && entities[hex.row][hex.col])
+		{
+			return entities[hex.row][hex.col][2];
+		}
     }
-
-	function moveEntity(fromHex, toHex) {
-		socket.emit('moveEntity', { fromHex: fromHex, toHex: toHex });
-	}
 
     function rowColToXandY(col, row) {
         // Calculate the center position of the hexagon
@@ -282,4 +280,89 @@ $(document).ready(function() {
 
         return [x, y];
     }
+	
+	function areHexesEqual(hex1,hex2)
+	{
+		return JSON.stringify(hex1) === JSON.stringify(hex2);
+	}
+	
+	/////MOVEMENT LOGIC
+	function moveEntity(fromHex, toHex) {
+		socket.emit('moveEntity', { fromHex: fromHex, toHex: toHex });
+	}
+
+	// Directions corresponding to the 6 possible moves in a hexagonal grid
+	const EVEN_DIRECTIONS = [
+		{ x: 0, y: -1 }, // North
+		{ x: 1, y: -1 }, // North-East
+		{ x: 1, y: 0 },  // South-East
+		{ x: 0, y: 1 },  // South
+		{ x: -1, y: 0 }, // South-West
+		{ x: -1, y: -1 }, // North-West
+	];
+	
+	const ODD_DIRECTIONS = [
+		{ x: 0, y: -1 }, // North
+		{ x: 1, y: 0 }, // North-East
+		{ x: 1, y: 1 },  // South-East
+		{ x: 0, y: 1 },  // South
+		{ x: -1, y: 1 }, // South-West
+		{ x: -1, y: 0 }, // North-West
+	];
+
+	// Function to check if a position is valid (within bounds and not occupied)
+	function isValid(x, y) {
+		// Check if within grid bounds
+		if (x < 0 || x >= cols || y < 0 || y >= rows) {
+			return false;
+		}
+		
+		// Check if tile is occupied
+		if (entities[y][x]) {
+			return false;
+		}
+		
+		return true;
+	}
+
+	// BFS function to determine if we can reach the destination
+	function canMove(start, end, maxMoves) {
+		const queue = [{ ...start, moves: 0 }];
+		const visited = new Set();
+		visited.add(`${start.col},${start.row}`);
+
+		while (queue.length > 0) {
+			const current = queue.shift();
+
+			// If we have reached the destination
+			if (current.col === end.col && current.row === end.row) {
+				return current.moves <= maxMoves;
+			}
+			
+			let directions
+			if (current.col % 2 === 0){
+				directions = EVEN_DIRECTIONS
+			} else {
+				directions = ODD_DIRECTIONS
+			}
+
+			// Check all 6 possible directions
+			for (const dir of directions) {
+				const newX = current.col + dir.x;
+				const newY = current.row + dir.y;
+				
+				// Only process valid and unvisited hexagons
+				if (isValid(newX, newY) &&
+					!visited.has(`${newX},${newY}`) &&
+					current.moves + 1 <= maxMoves) {
+					
+					visited.add(`${newX},${newY}`);
+					queue.push({ col: newX, row: newY, moves: current.moves + 1 });
+				}
+			}
+		}
+		return false; // No valid path found within maxMoves
+	}
 });
+
+
