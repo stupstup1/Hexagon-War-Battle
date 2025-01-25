@@ -1,0 +1,82 @@
+cd C:\Users\trevo\OneDrive\Desktop\online_gamer\HexagonalNodeJsGame (change working directory to appropriate location)
+did 'npm init' in this directory
+did 'npm install socket.io' in this directory
+
+to run server:
+node app.js (runs app.js, which permits access to localhost:2000)
+
+git:
+git status
+git add *
+git add <file>
+git reset
+git reset <file>
+git commit -m "commit text"
+git push origin main
+git fetch
+git pull origin main (overwrite existing files with what's on github)
+
+Debug client side:
+F12 -> console -> you can type a variable and it will tell you its value.
+
+Debug server side:
+F12 -> console -> you can type eval("variable")
+
+Project Folder Structure
+	app.js
+	package.json
+	node_modules
+		express
+		socket.io
+	server
+		serverFile1.js
+		serverFile2.js
+	client
+		js
+			clientFile1.js
+			clientFile2.js
+			sharedFile1.js
+			sharedFile2.js
+		img
+			myImg1.png
+			myImg2.png
+		index.html
+		
+
+
+File communication (Express)
+	Client asks server for a file
+	
+URL =    DOMAIN        PORT PATH
+	e.g. mywebsite.com:2000/client/playerImg.png
+	
+Package communication (Socket.io)
+	Client sends data to server
+	Server sends data to client
+	
+
+
+Todo:
+-show unit HP
+-show units stats when you select them
+-individual actions framework
+	-moving is default action
+-food generation & spending
+-turn timer
+-win/lose screen
+-handle premature disconnects by showing win screen
+
+Extra:
+-highlighting other player's unit movement? maybe different color?
+-display highlighting to player whose turn it isn't
+-pick a leader that shows up in corner of screen. Maybe has unique bonuses
+-get rid of 'lobby ID' display?
+-align canvas better
+
+Krita notes:
+flip image using Image -> mirror image horizontally
+magic wand select tool
+colors i was using:
+green: #00ff25
+red: #f90004
+black: #000000
