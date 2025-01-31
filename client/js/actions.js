@@ -4,8 +4,12 @@ $(document).ready(function() {
 	//to access from other files, call Actions.doAction(x,y,z)
 	window.Actions = window.Actions || {};
 
+	//list of action types
+	let actionTypes = ["Move","Attack","Build","Spawn","GenerateFood","GenerateActions"]
+
 	//all actions go through this function first
-	Actions.doAction = function doAction(playerData, actionType, performingEntity) {
+	Actions.doAction = function doAction(playerData, actionType, fromHex, toHex) {
+		if (!actionType.indexOf(actionTypes) || !playerData) {return}
 		return 1
 	}
 

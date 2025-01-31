@@ -44,8 +44,7 @@ $(document).ready(function() {
     var socket = window.socket; // Use the existing global socket
 
     socket.on('frameUpdate', function(playerData){
-		console.log(PLAYERNUMBER);
-        updateEntities(playerData);
+		updateEntities(playerData);
         drawScreen();  // Redraw grid
 
         // Redraw the hovered hexagon, if any

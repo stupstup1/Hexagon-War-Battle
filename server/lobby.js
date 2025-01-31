@@ -81,6 +81,8 @@ class Lobby {
         if (this.players.length !== 2) { return; }
 
         this.players.forEach((player) => {
+			console.log(this.players[0])
+			console.log("this is a circular reference")
             player.socket.emit('frameUpdate', { 
                 player1: this.players[0].units_array, 
                 player2: this.players[1].units_array
