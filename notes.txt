@@ -61,14 +61,18 @@ Todo:
 -show units stats when you select them
 -individual actions framework
 	-moving is default action
+	-build action
+	-attack action
+	-spawn action
 -food generation & spending
 -turn timer
 -win/lose screen
+-fix size scaling of everything
 -handle premature disconnects by showing win screen
 
 Extra:
 -highlighting other player's unit movement? maybe different color?
--display highlighting to player whose turn it isn't
+-display highlighting to player whose turn it isn't?
 -pick a leader that shows up in corner of screen. Maybe has unique bonuses
 -get rid of 'lobby ID' display?
 -align canvas better

@@ -1,5 +1,5 @@
 $(document).ready(function() {
-
+	
     var canvas = document.getElementById("ctx");
     var ctx = canvas.getContext("2d");
 	var canvas_units = document.getElementById("ctx_units");
