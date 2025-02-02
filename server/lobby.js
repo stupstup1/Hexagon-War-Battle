@@ -1,5 +1,5 @@
 // Import the Player class
-const { Player } = require('./player');
+const { Player } = require('./Player');
 const { Entity, Unit, Building, Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult } = require('./entity');
 
 // Lobby class to manage players and game state
@@ -36,22 +36,14 @@ class Lobby {
 		let player2Name = this.players[1].name;
 		
 		// spawn leader farm and barracks for each player
-		const leader1 = new Leader(0, 3);
-		const farm1 = new Farm(0, 2);
-		const barracks1 = new Barracks(0, 4);
-		const leader2 = new Leader(14, 3);
-		const farm2 = new Farm(14, 2);
-		const barracks2 = new Barracks(14, 4);
-		
         this.players[0].clearUnits();
-        this.players[0].addUnit(leader1);
-        this.players[0].addUnit(farm1);
-        this.players[0].addUnit(barracks1);
-
         this.players[1].clearUnits();
-        this.players[1].addUnit(leader2);
-        this.players[1].addUnit(farm2);
-        this.players[1].addUnit(barracks2);
+        this.players[0].spawnUnit("Leader", 0, 3)
+        this.players[0].spawnUnit("Barracks", 0, 4)
+        this.players[0].spawnUnit("Farm", 0, 2)
+        this.players[1].spawnUnit("Leader", 14, 3)
+        this.players[1].spawnUnit("Barracks", 14, 4)
+        this.players[1].spawnUnit("Farm", 14, 2)
 		
 		// start the game
         this.players.forEach((player) => {
@@ -81,8 +73,6 @@ class Lobby {
         if (this.players.length !== 2) { return; }
 
         this.players.forEach((player) => {
-			console.log(this.players[0])
-			console.log("this is a circular reference")
             player.socket.emit('frameUpdate', { 
                 player1: this.players[0].units_array, 
                 player2: this.players[1].units_array
@@ -132,17 +122,15 @@ class LobbyManager {
 		// Handle setting player name
 		socket.on('setName', (data) => {
 			let playerName = data.name
-			socket.player.name = playerName;
 			
 			// Assign player number (1 or 2)
-			if (lobby.players[0].name === playerName) {
-				socket.player.playerNumber = 1;  // First player
-			} else if (lobby.players[1].name === playerName) {
-				socket.player.playerNumber = 2;  // Second player
-			} else {
-				console.error('Name mismatch');
-				return;
-			}
+            if (!lobby.players[0].name) {
+                lobby.players[0].name = playerName
+                lobby.players[0].playerNumber = 1;
+            } else {
+                lobby.players[1].name = playerName
+                lobby.players[1].playerNumber = 2;
+            }
 			
 			// Start the game when both players have names
 			if (lobby.players.length === 2 && lobby.players.every(player => player.name)) {

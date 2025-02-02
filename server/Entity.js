@@ -1,6 +1,9 @@
+const { Action } = require('./actions');
+
 class Entity {
-    constructor(x, y) {
-		this.action_array = {}
+    constructor(x, y, id) {
+		this.id = id;
+		this.actions;
 		this.action_cap = 0;
 		this.HP = 0;
 		this.attack_dmg = 0;
@@ -13,19 +16,24 @@ class Entity {
 		this.type = ""
 		this.cost = 0
     }
+
+	doAction(actionType) {
+
+		this.actions.doAction(actionType);
+	}
 }
 
 class Unit extends Entity {
-    constructor(x, y) {
-        super(x, y);
-		this.action_array = [ "move", "attack" ];
+    constructor(x, y, id) {
+        super(x, y, id);
+		this.actions = new Action(["Move", "Attack"]);
 		this.action_cap = 2;
     }
 }
 
 class Swordfighter extends Unit {
-    constructor(x, y) {
-        super(x, y);
+    constructor(x, y, id) {
+        super(x, y, id);
 		this.HP = 3;
 		this.attack_dmg = 2;
 		this.attack_rng = 1;
@@ -36,8 +44,8 @@ class Swordfighter extends Unit {
 }
 
 class Archer extends Unit {
-    constructor(x, y) {
-        super(x, y);
+    constructor(x, y, id) {
+        super(x, y, id);
 		this.HP = 2;
 		this.attack_dmg = 2;
 		this.attack_rng = 2;
@@ -48,8 +56,8 @@ class Archer extends Unit {
 }
 
 class Cavalier extends Unit {
-    constructor(x, y) {
-        super(x, y);
+    constructor(x, y, id) {
+        super(x, y, id);
 		this.HP = 5;
 		this.attack_dmg = 2;
 		this.attack_rng = 1;
@@ -60,8 +68,8 @@ class Cavalier extends Unit {
 }
 
 class Catapult extends Unit {
-    constructor(x, y) {
-        super(x, y);
+    constructor(x, y, id) {
+        super(x, y, id);
 		this.action_cap = 1;
 		this.HP = 7;
 		this.attack_dmg = 3; //but automatically destroys buildings
@@ -73,15 +81,15 @@ class Catapult extends Unit {
 }
 
 class Building extends Entity {
-    constructor(x, y) {
-        super(x, y);
+    constructor(x, y, id) {
+        super(x, y, id);
 		this.movement_speed = 0;
     }
 }
 
 class Farm extends Building {
-    constructor(x, y) {
-        super(x, y);
+    constructor(x, y, id) {
+        super(x, y, id);
 		this.action_array = [];
 		this.action_cap = 0;
 		this.HP = 5;
@@ -91,9 +99,9 @@ class Farm extends Building {
 }
 
 class Barracks extends Building {
-    constructor(x, y) {
-        super(x, y);
-		this.action_array = [ "spawn" ];
+    constructor(x, y, id) {
+        super(x, y, id);
+		this.actions = new Action(["Spawn"]);
 		this.action_cap = 1;
 		this.HP = 5;
 		this.type = "Barracks"
@@ -102,9 +110,10 @@ class Barracks extends Building {
 }
 
 class Leader extends Entity {
-    constructor(x, y) {
-        super(x, y);
-		this.action_array = [ "move", "attack", "build" ];
+    constructor(x, y, id) {
+        super(x, y, id);
+		this.actions = new Action(["Move", "Attack", "Build"]);
+
 		this.action_cap = 3;
 		this.HP = 9;
 		this.attack_dmg = 2;

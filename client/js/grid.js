@@ -30,6 +30,7 @@ $(document).ready(function() {
 
     // Array to store hexagons for hover and click detection
     const hexagons = [];
+    const icons = [];
 	var clickedHexagon;
 	const clickedColor = 'yellow';
 	var highlightedHexagon;
@@ -71,23 +72,37 @@ $(document).ready(function() {
 		
 		//selects a hexagon when clicking. If clicking previously selected hexagon, unselect it!
 		clickedHexagon = detectHexagon(event);
-		
- 		//move action
+		if (clickedHexagon) {
+            onHexagonClicked(clickedHexagon, previousClickEntity, previousClickedHex);
+        }
+
+        clickedIcon = detectIcon(event);
+        if (clickedIcon) {
+            onIconClicked(clickedIcon, previousClickEntity);
+        }
+
+		//update the fuckig screen
+		drawScreen();
+    });
+
+    function onHexagonClicked(clickedHexagon, previousClickEntity, previousClickedHex) {
+        //move action
         const currentClickEntity = getEntityAtHex(clickedHexagon);
         if (previousClickEntity && !currentClickEntity && canMove(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
             moveEntity(previousClickedHex, clickedHexagon);
         } else
-		{
-			if (areHexesEqual(previousClickedHex,clickedHexagon)) {
-				clickedHexagon = null
-			}
-			//Display actions to choose from
-			drawActionIcons(clickedHexagon);
-		}
-		
-		//update the fuckig screen
-		drawScreen();
-    }); 
+        {
+            if (areHexesEqual(previousClickedHex,clickedHexagon)) {
+                clickedHexagon = null
+            }
+            //Display actions to choose from
+            drawActionIcons(clickedHexagon);
+        }
+    }
+
+    function onIconClicked(clickedIcon, previousClickEntity) {
+        socket.emit("iconClick", {ActionType: clickedIcon.ActionType, SelectedEntity: previousClickEntity})
+    }
 
     // Highlight a hexagon
     function highlightHexagon(hex, fillColor) {
@@ -180,22 +195,49 @@ $(document).ready(function() {
 
         return inside;
     }
+
+    function isPointInIcon(px, py, icon) {
+        const x = icon.x;
+        const y = icon.y;
+        const width = icon.width;
+        const height = icon.height;
+
+        if (px < x || px > x + width) {
+            return false;
+        }
+        else if (py < y || py > y + height) {
+            return false;
+        }
+
+        return true;
+    }
 	
 	function detectHexagon(event) {
         const mouseX = event.offsetX;
         const mouseY = event.offsetY;
 
-        hexagonOfInterest = null;  // Reset hovered hexagon on each move
-
         // Check which hexagon the mouse is over
-        hexagons.forEach(hex => {
+        for (let hex of hexagons) {
             if (isPointInHexagon(mouseX, mouseY, hex)) {
-                hexagonOfInterest = hex;
+                return hex;
             }
-        });
-		
-		return hexagonOfInterest;
+        }
+
+        return null;
 	}
+
+    function detectIcon(event) {
+        const mouseX = event.offsetX;
+        const mouseY = event.offsetY;
+
+        for (let icon of icons) {
+            if (isPointInIcon(mouseX, mouseY, icon)) {
+                return icon;
+            }
+        }
+		
+		return null;
+    }
 
     function updateEntities(playerData) {
         // clear entities
@@ -240,6 +282,7 @@ $(document).ready(function() {
 		let entity;
 		ctx_units.clearRect(0, 0, canvas_units.width/15, canvas_units.height);  // Clear actions side of canvas, not units
 		playerKey = getPlayerKeyAtHex(clickedHexagon)
+        icons.length = 0;
 		if (playerKey != PLAYERNUMBER) {return;} //quit if it's not ur unit
 		
         if (clickedHexagon) {
@@ -249,16 +292,17 @@ $(document).ready(function() {
 		
 		//for each action type on the entity, draw the icon
 		loopIteration = 0
-		for (let actionType of entity.action_array) {
+		for (let actionType of entity.actions.AllowedActions) {
 			// Calculate the Y position
 			loopIteration += 1;
 			let y = (loopIteration * 80) + 10;
 			// Create a new Image and return a Promise that resolves when the image is loaded
 			const img = new Image();
-			img.src = 'img/action' + actionType + '.png';
+			img.src = 'img/action' + actionType.toLowerCase() + '.png';
 			img.onload = () => {
 				ctx_units.drawImage(img, 10, y, 75, 75);
 			};
+            icons.push({ActionType: actionType, x: 10, y: y, width: 75, height: 75});
 		}
 	}
 
