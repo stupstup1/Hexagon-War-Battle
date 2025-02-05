@@ -31,9 +31,10 @@ $(document).ready(function() {
     // Array to store hexagons for hover and click detection
     const hexagons = [];
     const icons = [];
+    var zoomedIcon;
 	var clickedHexagon;
-	const clickedColor = 'yellow';
 	var highlightedHexagon;
+    const clickedColor = 'yellow';
 	const highlightedColor = 'lightyellow';
 	const highlightedColorCanMove = 'lightgreen';
 	const defaultColor = 'lightblue';
@@ -60,32 +61,40 @@ $(document).ready(function() {
 
     // Mouse event listeners
     canvas_units.addEventListener('mousemove', (event) => {
+        const previousZoomedIcon = zoomedIcon
+        zoomedIcon = detectIcon(event)
 		highlightedHexagon = detectHexagon(event);
 		drawScreen();
+        if (JSON.stringify(previousZoomedIcon) !== JSON.stringify(zoomedIcon)) {
+            drawActionIcons();
+        }
     });
 	
  	// Mouse event listeners
 	// We only want to redraw action icons if we don't move
     canvas_units.addEventListener('click', (event) => {
+        let updateClickedHexagon;
         const previousClickEntity = getEntityAtHex(clickedHexagon);
         const previousClickedHex = clickedHexagon;
 		
-		//selects a hexagon when clicking. If clicking previously selected hexagon, unselect it!
-		clickedHexagon = detectHexagon(event);
-		if (clickedHexagon) {
-            onHexagonClicked(clickedHexagon, previousClickEntity, previousClickedHex);
-        }
-
+        //detects clicking on action icons
         clickedIcon = detectIcon(event);
         if (clickedIcon) {
             onIconClicked(clickedIcon, previousClickEntity);
         }
-
+        if (!clickedIcon) {//This if statement prevents deselecting units when clicking their actions
+            clickedHexagon = detectHexagon(event);
+            updateClickedHexagon = true
+            if (!clickedHexagon) {drawActionIcons()} //still draw icons if we clicked outside border
+        }
+        if (clickedHexagon && updateClickedHexagon) { 
+            onHexagonClicked(previousClickEntity, previousClickedHex); //selects a hexagon when clicking. If clicking previously selected hexagon, unselect it!
+        }        
 		//update the fuckig screen
 		drawScreen();
     });
 
-    function onHexagonClicked(clickedHexagon, previousClickEntity, previousClickedHex) {
+    function onHexagonClicked(previousClickEntity, previousClickedHex) {
         //move action
         const currentClickEntity = getEntityAtHex(clickedHexagon);
         if (previousClickEntity && !currentClickEntity && canMove(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
@@ -96,7 +105,7 @@ $(document).ready(function() {
                 clickedHexagon = null
             }
             //Display actions to choose from
-            drawActionIcons(clickedHexagon);
+            drawActionIcons();
         }
     }
 
@@ -278,31 +287,35 @@ $(document).ready(function() {
     }
 	
 	//Display actions to choose from if an entity is selected
-	function drawActionIcons(clickedHexagon) {
+	function drawActionIcons() {
 		let entity;
 		ctx_units.clearRect(0, 0, canvas_units.width/15, canvas_units.height);  // Clear actions side of canvas, not units
 		playerKey = getPlayerKeyAtHex(clickedHexagon)
         icons.length = 0;
 		if (playerKey != PLAYERNUMBER) {return;} //quit if it's not ur unit
-		
         if (clickedHexagon) {
 			entity = getEntityAtHex(clickedHexagon)
         }
         if (!entity) { return; } //quit if no entity found
-		
+
 		//for each action type on the entity, draw the icon
 		loopIteration = 0
 		for (let actionType of entity.actions.AllowedActions) {
-			// Calculate the Y position
 			loopIteration += 1;
+            let x = 10
 			let y = (loopIteration * 80) + 10;
-			// Create a new Image and return a Promise that resolves when the image is loaded
+            let img_width = 75
+            let img_length = 75
 			const img = new Image();
 			img.src = 'img/action' + actionType.toLowerCase() + '.png';
+            if (zoomedIcon && zoomedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) {
+                img_width = img_width * 1.25
+                img_length = img_length * 1.25
+            }
 			img.onload = () => {
-				ctx_units.drawImage(img, 10, y, 75, 75);
+				ctx_units.drawImage(img, x, y, img_width, img_length);
 			};
-            icons.push({ActionType: actionType, x: 10, y: y, width: 75, height: 75});
+            icons.push({ActionType: actionType, x: x, y: y, width: img_width, height: img_length});
 		}
 	}
 

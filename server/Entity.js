@@ -18,7 +18,6 @@ class Entity {
     }
 
 	doAction(actionType) {
-
 		this.actions.doAction(actionType);
 	}
 }

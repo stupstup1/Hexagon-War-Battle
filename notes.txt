@@ -1,4 +1,5 @@
-cd C:\Users\trevo\OneDrive\Desktop\online_gamer\HexagonalNodeJsGame (change working directory to appropriate location)
+cd C:\Users\trevo\OneDrive\Desktop\online_gamer\HexagonalNodeJsGame 
+	-(change working directory to appropriate location)
 did 'npm init' in this directory
 did 'npm install socket.io' in this directory
 
@@ -68,6 +69,7 @@ Todo:
 -turn timer
 -win/lose screen
 -fix size scaling of everything
+-get rid of screen flashing action icons
 -handle premature disconnects by showing win screen
 
 Extra:

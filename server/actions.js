@@ -19,8 +19,8 @@ export class Action {
 	
 
 	doAction(actionType) {
-		if (!actionType.indexOf(this.actionTypes)) {return;}
-		this.ActionMap[actionType]();
+		if (!actionType.indexOf(this.actionTypes)) {return;} //Quit if not a valid action
+		this.ActionMap[actionType](); //Call the action's function
 		return 1
 	}
 	
