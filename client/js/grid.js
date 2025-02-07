@@ -1,5 +1,9 @@
 $(document).ready(function() {
 	
+    //-----------------------------------------------------------
+    //GLOBALS + SHIT
+    //-----------------------------------------------------------
+
     var canvas = document.getElementById("ctx");
     var ctx = canvas.getContext("2d");
 	var canvas_units = document.getElementById("ctx_units");
@@ -31,9 +35,10 @@ $(document).ready(function() {
     // Array to store hexagons for hover and click detection
     const hexagons = [];
     const icons = [];
-    var zoomedIcon;
-	var clickedHexagon;
-	var highlightedHexagon;
+    var zoomedIcon; //used to detect if we've moused over an action icon
+    var clickedIcon; //used to detect if we've clicked an action icon
+	var clickedHexagon; //used to detect if we've clicked a Hexagon
+	var highlightedHexagon; //poorly named, but used to detect Hexagons we're currently mousing over
     const clickedColor = 'yellow';
 	const highlightedColor = 'lightyellow';
 	const highlightedColorCanMove = 'lightgreen';
@@ -45,33 +50,28 @@ $(document).ready(function() {
     // Socket.IO setup
     var socket = window.socket; // Use the existing global socket
 
+    // Server initiated redrawing
     socket.on('frameUpdate', function(playerData){
 		updateEntities(playerData);
-        drawScreen();  // Redraw grid
-
-        // Redraw the hovered hexagon, if any
-        if (hoveredHex) {
-            highlightHexagon(hoveredHex);  // Highlight hovered hexagon
-        }
-					
+        drawScreen();  // Redraw grid					
     });
 
-    // Mouse hover and click detection variables
-    let hoveredHex = null;  // Track the hexagon being hovered over
+    //-----------------------------------------------------------
+    //MAIN MOUSE LISTENERS
+    //-----------------------------------------------------------
 
-    // Mouse event listeners
+    // Mouse move listeners
     canvas_units.addEventListener('mousemove', (event) => {
         const previousZoomedIcon = zoomedIcon
         zoomedIcon = detectIcon(event)
 		highlightedHexagon = detectHexagon(event);
 		drawScreen();
         if (JSON.stringify(previousZoomedIcon) !== JSON.stringify(zoomedIcon)) {
-            drawActionIcons();
+            drawUnitInfo(); //display zoomed icon on mouseover
         }
     });
 	
- 	// Mouse event listeners
-	// We only want to redraw action icons if we don't move
+ 	// Mouse click listeners
     canvas_units.addEventListener('click', (event) => {
         let updateClickedHexagon;
         const previousClickEntity = getEntityAtHex(clickedHexagon);
@@ -85,7 +85,7 @@ $(document).ready(function() {
         if (!clickedIcon) {//This if statement prevents deselecting units when clicking their actions
             clickedHexagon = detectHexagon(event);
             updateClickedHexagon = true
-            if (!clickedHexagon) {drawActionIcons()} //still draw icons if we clicked outside border
+            if (!clickedHexagon) {drawUnitInfo()} //clear icons if we clicked outside border
         }
         if (clickedHexagon && updateClickedHexagon) { 
             onHexagonClicked(previousClickEntity, previousClickedHex); //selects a hexagon when clicking. If clicking previously selected hexagon, unselect it!
@@ -93,6 +93,10 @@ $(document).ready(function() {
 		//update the fuckig screen
 		drawScreen();
     });
+
+    //-----------------------------------------------------------
+    //"IF CLICKED" FUNCTIONS
+    //-----------------------------------------------------------
 
     function onHexagonClicked(previousClickEntity, previousClickedHex) {
         //move action
@@ -105,30 +109,18 @@ $(document).ready(function() {
                 clickedHexagon = null
             }
             //Display actions to choose from
-            drawActionIcons();
+            drawUnitInfo();
         }
     }
 
     function onIconClicked(clickedIcon, previousClickEntity) {
         socket.emit("iconClick", {ActionType: clickedIcon.ActionType, SelectedEntity: previousClickEntity})
+        drawUnitInfo(); //should update the icon to be green
     }
 
-    // Highlight a hexagon
-    function highlightHexagon(hex, fillColor) {
-        ctx.beginPath();
-        ctx.moveTo(hex.x + radius, hex.y);  // Starting point
-        for (let i = 1; i < 6; i++) {
-            let angle = Math.PI / 3 * i;
-            ctx.lineTo(hex.x + radius * Math.cos(angle), hex.y + radius * Math.sin(angle));
-        }
-        ctx.closePath();
-		ctx.fillStyle = 'yellow';  // Highlighted color
-        if (fillColor){
-			ctx.fillStyle = fillColor
-		}
-        ctx.fill();
-        ctx.stroke();
-    }
+    //-----------------------------------------------------------
+    //DRAWING FUNCTIONS
+    //-----------------------------------------------------------
 
     // Draw a single hexagon
     function drawHexagon(col, row, radius) {
@@ -180,13 +172,98 @@ $(document).ready(function() {
         }
 		
 		//Display actions remaining and food
-		ctx.font = '24px Arial';
-		ctx.fillStyle = 'black';
+        ctx.font = '20px Arial'; //I wanted to set the font at the top but it gets overwritten and I don't know why
+        ctx.fillStyle = 'black';
 		actionsRemaining = 3
 		ctx.fillText('Remaining Actions: ' + actionsRemaining, 10, 30); // The numbers (10, 30) are the x and y coordinates
 		food = 5
 		ctx.fillText("Food: " + food, 10, 70); // The numbers (10, 30) are the x and y coordinates
     }
+
+    function updateEntities(playerData) {
+        // clear entities
+        entities = Array.from(Array(rows), () => new Array(cols));
+        ctx_units.clearRect(canvas_units.width/10, 0, canvas_units.width, canvas_units.height);  // Clear canvas, not action icons
+        
+        // for each player
+        for (let playerKey in playerData) {
+            const player = playerData[playerKey];
+            // for each player entity
+            for (let i in player) {
+                const entity = player[i];
+                const entityType = entity.type;
+                const col = entity.coords.x;
+                const row = entity.coords.y;
+                // add to the entities array
+                entities[row][col] = [entityType, playerKey, entity];
+
+                // then draw the entity
+                drawEntity(col, row, entityType, playerKey);
+            }
+        }
+    }
+
+    function drawEntity(col, row, entityToDraw, playerKey) {
+        if (!entityToDraw) { return; }
+		//If entityToDraw, draw entity
+
+        // Calculate the center position of the hexagon
+        const [x, y] = rowColToXandY(col, row);
+        let entX = x - radius + 5
+        let entY = y - radius + 5
+        const img = new Image();
+        img.src = 'img/' + playerKey + entityToDraw + '.png';
+        img.onload = function() {
+            ctx_units.drawImage(img, entX, entY, 75, 75);
+        };
+    }
+	
+	//Display actions to choose from if an entity is selected
+	function drawUnitInfo() {
+		let entity;
+		ctx_units.clearRect(0, 0, canvas_units.width/10, canvas_units.height);  // Clear actions side of canvas, not units
+		playerKey = getPlayerKeyAtHex(clickedHexagon)
+        icons.length = 0;
+		if (playerKey != PLAYERNUMBER) {return;} //quit if it's not ur unit
+        if (clickedHexagon) {
+			entity = getEntityAtHex(clickedHexagon)
+        }
+        if (!entity) { return; } //quit if no entity found
+
+		//for each action type on the entity, draw the icon
+		loopIteration = 0
+        let unitfont_y = 0
+		for (let actionType of entity.actions.AllowedActions) {
+			loopIteration += 1;
+            let x = 10
+			let y = (loopIteration * 80) + 10;
+            unitfont_y = y
+            let img_width = 75
+            let img_length = 75
+			const img = new Image();
+			img.src = 'img/action' + actionType.toLowerCase() + '.png';
+            if (zoomedIcon && zoomedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) { //zoomedIcon
+                img_width = img_width * 1.25
+                img_length = img_length * 1.25
+            }
+            if (clickedIcon && clickedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) { //clickedIcon
+                img.src = 'img/action' + actionType.toLowerCase() + 'Select.png';
+            }
+			img.onload = () => {
+				ctx_units.drawImage(img, x, y, img_width, img_length);
+			};
+            icons.push({ActionType: actionType, x: x, y: y, width: img_width, height: img_length});
+		}
+        //display unit HP, add more stuff later
+        ctx_units.font = '20px Arial'; //I wanted to set the font at the top but it gets overwritten and I don't know why
+        ctx_units.fillStyle = 'black';
+		ctx_units.fillText('HP: ' + entity.current_HP + '/' + entity.max_HP, 10, unitfont_y + 120);
+        ctx_units.fillText('Unit Actions: ' + entity.current_actions + '/' + entity.max_actions, 10, unitfont_y + 160);
+	}
+
+    //-----------------------------------------------------------
+    //MISC FUNCTIONS
+    //-----------------------------------------------------------
 
     // Check if a point (mouse) is inside a hexagon
     function isPointInHexagon(px, py, hex) {
@@ -248,77 +325,6 @@ $(document).ready(function() {
 		return null;
     }
 
-    function updateEntities(playerData) {
-        // clear entities
-        entities = Array.from(Array(rows), () => new Array(cols));
-        ctx_units.clearRect(canvas_units.width/15, 0, canvas_units.width, canvas_units.height);  // Clear canvas, not action icons
-        
-        // for each player
-        for (let playerKey in playerData) {
-            const player = playerData[playerKey];
-            // for each player entity
-            for (let i in player) {
-                const entity = player[i];
-                const entityType = entity.type;
-                const col = entity.coords.x;
-                const row = entity.coords.y;
-                // add to the entities array
-                entities[row][col] = [entityType, playerKey, entity];
-
-                // then draw the entity
-                drawEntity(col, row, entityType, playerKey);
-            }
-        }
-    }
-
-    function drawEntity(col, row, entityToDraw, playerKey) {
-        if (!entityToDraw) { return; }
-		//If entityToDraw, draw entity
-
-        // Calculate the center position of the hexagon
-        const [x, y] = rowColToXandY(col, row);
-        let entX = x - radius + 5
-        let entY = y - radius + 5
-        const img = new Image();
-        img.src = 'img/' + playerKey + entityToDraw + '.png';
-        img.onload = function() {
-            ctx_units.drawImage(img, entX, entY, 75, 75);
-        };
-    }
-	
-	//Display actions to choose from if an entity is selected
-	function drawActionIcons() {
-		let entity;
-		ctx_units.clearRect(0, 0, canvas_units.width/15, canvas_units.height);  // Clear actions side of canvas, not units
-		playerKey = getPlayerKeyAtHex(clickedHexagon)
-        icons.length = 0;
-		if (playerKey != PLAYERNUMBER) {return;} //quit if it's not ur unit
-        if (clickedHexagon) {
-			entity = getEntityAtHex(clickedHexagon)
-        }
-        if (!entity) { return; } //quit if no entity found
-
-		//for each action type on the entity, draw the icon
-		loopIteration = 0
-		for (let actionType of entity.actions.AllowedActions) {
-			loopIteration += 1;
-            let x = 10
-			let y = (loopIteration * 80) + 10;
-            let img_width = 75
-            let img_length = 75
-			const img = new Image();
-			img.src = 'img/action' + actionType.toLowerCase() + '.png';
-            if (zoomedIcon && zoomedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) {
-                img_width = img_width * 1.25
-                img_length = img_length * 1.25
-            }
-			img.onload = () => {
-				ctx_units.drawImage(img, x, y, img_width, img_length);
-			};
-            icons.push({ActionType: actionType, x: x, y: y, width: img_width, height: img_length});
-		}
-	}
-
     function getPlayerKeyAtHex(hex) {
 		if (hex && entities[hex.row][hex.col])
 		{
@@ -352,12 +358,16 @@ $(document).ready(function() {
 		return JSON.stringify(hex1) === JSON.stringify(hex2);
 	}
 	
-	/////MOVEMENT LOGIC
+    //-----------------------------------------------------------
+    //MOVEMENT LOGIC
+    //-----------------------------------------------------------
+    
+    // Tell server to move an entity
 	function moveEntity(fromHex, toHex) {
 		socket.emit('moveEntity', { fromHex: fromHex, toHex: toHex });
 	}
 
-	// Directions corresponding to the 6 possible moves in a hexagonal grid
+	// Directions corresponding to the 6 possible moves in a hexagonal grid from an even column
 	const EVEN_DIRECTIONS = [
 		{ x: 0, y: -1 }, // North
 		{ x: 1, y: -1 }, // North-East
@@ -367,6 +377,7 @@ $(document).ready(function() {
 		{ x: -1, y: -1 }, // North-West
 	];
 	
+    // Directions corresponding to the 6 possible moves in a hexagonal grid from an odd column
 	const ODD_DIRECTIONS = [
 		{ x: 0, y: -1 }, // North
 		{ x: 1, y: 0 }, // North-East

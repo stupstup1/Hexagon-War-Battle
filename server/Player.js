@@ -37,6 +37,8 @@ class Player {
     spawnUnit(entityType, x, y) {
         this.ID_count += 1
         const newUnit = new this.EntityMap[entityType](x, y, this.ID_count);
+        newUnit.current_HP = newUnit.max_HP;
+        newUnit.current_actions = newUnit.max_actions;
         this.addUnit(newUnit)
     }
 
