@@ -7,7 +7,8 @@ class Player {
         this.name = '';
 		this.playerNumber = 0;
         this.turn = false;  // Indicates if it's the player's turn
-		this.units_array = []
+		this.entities_array = []
+        this.current_actions = 0;
 		this.base_actions = 3
         this.ID_count = 0 //this is for assigning entities unique IDs to later identify them
         this.EntityMap = {
@@ -19,18 +20,36 @@ class Player {
             Barracks: Barracks,
             Farm: Farm
         }
-        socket.on("iconClick", (data) => {
+        socket.on("updateActionState", (data) => {
             if (!data.SelectedEntity) { console.log("null"); return; }
-            for (let Unit of this.units_array){
-                if (Unit.id === data.SelectedEntity.id) {  //if the entity's ID matches the entity actually recognized as an entity's ID on the server...
-                    Unit.doAction(data.ActionType);
-                }
-            } 
+            let thisEntity = this.findServerEntity(data.SelectedEntity, this.entities_array)
+            thisEntity.setActionState(data.ActionType);
         });
     }
-		
+	
+    //data contains actionType, fromHex, and toHex. We add entity to it in here
+    doAction(unitIndex, data) {
+        data.entity = this.entities_array[unitIndex]
+        let performed = data.entity.doAction(data)
+        if (performed) {
+            this.current_actions -= 1
+            return performed
+        }
+        return -1   
+    }
+
+    findServerEntity(entity, entities_array) {
+        for (let Unit of entities_array){
+            if (Unit.id === entity.id) {  //if the entity's ID matches the entity actually recognized as an entity's ID on the server...
+                return Unit
+            }
+        } 
+        return -1
+    }
+
 	setTurn(isTurn) {
         this.turn = isTurn;
+        this.current_actions = this.base_actions;
 		this.socket.emit('turnUpdate', { isTurn: this.turn }) //hides or displays end turn button
     }
 	
@@ -43,16 +62,16 @@ class Player {
     }
 
 	addUnit(unit) {	
-		this.units_array.push(unit)
+		this.entities_array.push(unit)
 	}
 	
     clearUnits() {
-        this.units_array = [];
+        this.entities_array = [];
     }
 	
-	getUnitToMove(fromHex) {
-		for (var i in this.units_array) {
-            const unit = this.units_array[i];
+	getUnitIfIsMine(fromHex) {
+		for (var i in this.entities_array) {
+            const unit = this.entities_array[i];
             if (fromHex && unit.coords.x == fromHex.col && unit.coords.y == fromHex.row) {
 				return i;
             }
@@ -62,7 +81,7 @@ class Player {
 	}
 	
     moveUnit(unitIndex, toHex) {
-        this.units_array[unitIndex].coords = {
+        this.entities_array[unitIndex].coords = {
 			x: toHex.col,
 			y: toHex.row
 		};

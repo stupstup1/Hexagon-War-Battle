@@ -50,8 +50,12 @@ $(document).ready(function() {
     // Socket.IO setup
     var socket = window.socket; // Use the existing global socket
 
-    // Server initiated redrawing
-    socket.on('frameUpdate', function(playerData){
+    //-----------------------------------------------------------
+    //SERVER LISTENERS
+    //-----------------------------------------------------------
+
+    // Server initiated updating
+    socket.on('serverUpdate', function(playerData){
 		updateEntities(playerData);
         drawScreen();  // Redraw grid					
     });
@@ -77,15 +81,16 @@ $(document).ready(function() {
         const previousClickEntity = getEntityAtHex(clickedHexagon);
         const previousClickedHex = clickedHexagon;
 		
-        //detects clicking on action icons
-        clickedIcon = detectIcon(event);
+        clickedIcon = detectIcon(event); //detects clicking on action icons
         if (clickedIcon) {
             onIconClicked(clickedIcon, previousClickEntity);
         }
-        if (!clickedIcon) {//This if statement prevents deselecting units when clicking their actions
+        if (!clickedIcon) {//Nesting clickedHexagon like this prevents deselecting units when clicking their actions
             clickedHexagon = detectHexagon(event);
             updateClickedHexagon = true
-            if (!clickedHexagon) {drawUnitInfo()} //clear icons if we clicked outside border
+            if (!clickedHexagon) { //If we didn't click an icon nor a hexagon...
+                drawUnitInfo() //clear action icons
+            } 
         }
         if (clickedHexagon && updateClickedHexagon) { 
             onHexagonClicked(previousClickEntity, previousClickedHex); //selects a hexagon when clicking. If clicking previously selected hexagon, unselect it!
@@ -99,14 +104,16 @@ $(document).ready(function() {
     //-----------------------------------------------------------
 
     function onHexagonClicked(previousClickEntity, previousClickedHex) {
-        //move action
         const currentClickEntity = getEntityAtHex(clickedHexagon);
+        if (currentClickEntity && ["Unit", "Leader"].includes(currentClickEntity.type)) {
+            socket.emit("updateActionState", {ActionType: "Move", SelectedEntity: currentClickEntity}) //default action for Units/Leader is move
+        }
         if (previousClickEntity && !currentClickEntity && canMove(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
-            moveEntity(previousClickedHex, clickedHexagon);
+            performAction("Move", previousClickedHex, clickedHexagon);
         } else
         {
             if (areHexesEqual(previousClickedHex,clickedHexagon)) {
-                clickedHexagon = null
+                clickedHexagon = null //unselects a previously selected hexagon
             }
             //Display actions to choose from
             drawUnitInfo();
@@ -114,7 +121,7 @@ $(document).ready(function() {
     }
 
     function onIconClicked(clickedIcon, previousClickEntity) {
-        socket.emit("iconClick", {ActionType: clickedIcon.ActionType, SelectedEntity: previousClickEntity})
+        socket.emit("updateActionState", {ActionType: clickedIcon.ActionType, SelectedEntity: previousClickEntity})
         drawUnitInfo(); //should update the icon to be green
     }
 
@@ -191,14 +198,14 @@ $(document).ready(function() {
             // for each player entity
             for (let i in player) {
                 const entity = player[i];
-                const entityType = entity.type;
+                const entitySubtype = entity.subtype;
                 const col = entity.coords.x;
                 const row = entity.coords.y;
                 // add to the entities array
-                entities[row][col] = [entityType, playerKey, entity];
+                entities[row][col] = [entitySubtype, playerKey, entity];
 
                 // then draw the entity
-                drawEntity(col, row, entityType, playerKey);
+                drawEntity(col, row, entitySubtype, playerKey);
             }
         }
     }
@@ -233,27 +240,29 @@ $(document).ready(function() {
 		//for each action type on the entity, draw the icon
 		loopIteration = 0
         let unitfont_y = 0
-		for (let actionType of entity.actions.AllowedActions) {
-			loopIteration += 1;
-            let x = 10
-			let y = (loopIteration * 80) + 10;
-            unitfont_y = y
-            let img_width = 75
-            let img_length = 75
-			const img = new Image();
-			img.src = 'img/action' + actionType.toLowerCase() + '.png';
-            if (zoomedIcon && zoomedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) { //zoomedIcon
-                img_width = img_width * 1.25
-                img_length = img_length * 1.25
+        if (entity.actions) {
+            for (let actionType of entity.actions.AllowedActions) {
+                loopIteration += 1;
+                let x = 10
+                let y = (loopIteration * 80) + 10;
+                unitfont_y = y
+                let img_width = 75
+                let img_length = 75
+                const img = new Image();
+                img.src = 'img/action' + actionType.toLowerCase() + '.png';
+                if (zoomedIcon && zoomedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) { //zoomedIcon
+                    img_width = img_width * 1.25
+                    img_length = img_length * 1.25
+                }
+                if (clickedIcon && clickedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) { //clickedIcon
+                    img.src = 'img/action' + actionType.toLowerCase() + 'Select.png';
+                }
+                img.onload = () => {
+                    ctx_units.drawImage(img, x, y, img_width, img_length);
+                };
+                icons.push({ActionType: actionType, x: x, y: y, width: img_width, height: img_length});
             }
-            if (clickedIcon && clickedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) { //clickedIcon
-                img.src = 'img/action' + actionType.toLowerCase() + 'Select.png';
-            }
-			img.onload = () => {
-				ctx_units.drawImage(img, x, y, img_width, img_length);
-			};
-            icons.push({ActionType: actionType, x: x, y: y, width: img_width, height: img_length});
-		}
+        }
         //display unit HP, add more stuff later
         ctx_units.font = '20px Arial'; //I wanted to set the font at the top but it gets overwritten and I don't know why
         ctx_units.fillStyle = 'black';
@@ -359,13 +368,12 @@ $(document).ready(function() {
 	}
 	
     //-----------------------------------------------------------
-    //MOVEMENT LOGIC
+    //ACTION LOGIC
     //-----------------------------------------------------------
     
-    // Tell server to move an entity
-	function moveEntity(fromHex, toHex) {
-		socket.emit('moveEntity', { fromHex: fromHex, toHex: toHex });
-	}
+    function performAction(actionType, fromHex, toHex) {
+        socket.emit('performAction', { actionType: actionType, fromHex: fromHex, toHex: toHex })
+    }
 
 	// Directions corresponding to the 6 possible moves in a hexagonal grid from an even column
 	const EVEN_DIRECTIONS = [

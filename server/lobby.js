@@ -73,9 +73,9 @@ class Lobby {
         if (this.players.length !== 2) { return; }
 
         this.players.forEach((player) => {
-            player.socket.emit('frameUpdate', { 
-                player1: this.players[0].units_array, 
-                player2: this.players[1].units_array
+            player.socket.emit('serverUpdate', { 
+                player1: this.players[0].entities_array, 
+                player2: this.players[1].entities_array
             }); 
         });
     }
@@ -150,26 +150,22 @@ class LobbyManager {
             }
         });
 
-        // Move entity
-        socket.on('moveEntity', function(data) {
-            const { fromHex, toHex } = data;
-			
-			var moved;
+        // Perform Action
+        socket.on('performAction', function(data) {
+            const { actionType, fromHex, toHex } = data;
             for (var i in lobby.players) {
                 const player = lobby.players[i];
-				const unitIndex = player.getUnitToMove(fromHex);
-				if (unitIndex == -1 || player.socket !== socket) { continue; } // prevent moving units not owned by player
-				if (!player.turn) {continue; } // prevent moving units if its not your turn
-				
-				player.moveUnit(unitIndex,toHex);
-				moved = true;
+				const unitIndex = player.getUnitIfIsMine(fromHex);
+				if (unitIndex == -1 || player.socket !== socket) { continue; } // prevent performing actions with units that aren't yours
+				if (!player.turn) {continue; } // prevent performing actions if its not your turn
+				if (player.doAction(unitIndex, data)){
+				    let performed = true;
+                    if (performed) {
+                        lobby.sendBoardUpdate();
+                    }
+                }
             }
-
-			if (moved)
-			{
-				lobby.sendBoardUpdate();
-			}
-        });
+        });         
     }
 
     // Handle player disconnection
