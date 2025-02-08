@@ -1,5 +1,5 @@
 // Import the Entity class
-const { Entity, Unit, Building, Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult } = require('./entity');
+const { Entity, Unit, Building, Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult } = require('./Entity');
 
 class Player {
     constructor(socket) {
@@ -21,7 +21,7 @@ class Player {
             Farm: Farm
         }
         socket.on("updateActionState", (data) => {
-            if (!data.SelectedEntity) { console.log("null"); return; }
+            if (!data.SelectedEntity) {return; }
             let thisEntity = this.findServerEntity(data.SelectedEntity, this.entities_array)
             thisEntity.setActionState(data.ActionType);
         });
@@ -35,7 +35,6 @@ class Player {
             performed = data.entity.doAction(data)
         }
         if (performed) {
-            console.log(performed)
             this.current_actions -= 1
             return performed
         }
