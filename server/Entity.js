@@ -22,12 +22,15 @@ class Entity {
     }
 	//data contains entity, actionType, fromHex, and toHex
 	doAction(data) {
-		let performed = this.actions.doAction(data)
+		let performed = false
+		if (this.current_actions > 0) {
+			performed = this.actions.doAction(data)
+		}
         if (performed) {
             this.current_actions -= 1
             return performed
         }
-        return -1   
+        return false
 	}
 
 	setActionState(actionType) {

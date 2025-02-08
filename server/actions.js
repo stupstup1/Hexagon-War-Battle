@@ -28,8 +28,8 @@ export class Action {
 	
 	//data contains entity, actionType, fromHex, and toHex
 	doAction(data) {
-		if (!data) {return;} //Quit if no data
-		if (!data.actionType || !data.actionType.indexOf(this.actionTypes)) {return;} //Quit if not a valid action or if action is null
+		if (!data  || !data.actionType) {return;} //Quit if no data or if action is null
+		if (!data.actionType.indexOf(this.actionTypes) || data.actionType !== data.entity.action_state) {return;} //Quit if not a valid action or if action doesn't match entity.action_state
 		let performed = this.DoActionMap[data.actionType](data);
 		return performed
 	}

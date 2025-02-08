@@ -16,7 +16,6 @@ class Lobby {
     addPlayer(socket) {
         if (this.players.length < this.maxPlayers) {
             const newPlayer = new Player(socket);
-			socket.player = newPlayer
             this.players.push(newPlayer);
             socket.emit('nameRequest', { message: 'Please enter your name.' });
         }
@@ -72,10 +71,21 @@ class Lobby {
     sendBoardUpdate() {
         if (this.players.length !== 2) { return; }
 
+        let player_current_actions = 0; //making sure these at least have a value
+        let player_base_actions = 0;
+        this.players.forEach((player) => { //figure out whose turn it is, send the total action count of that player
+            if (player.turn) { 
+                player_current_actions = player.current_actions;
+                player_base_actions = player.base_actions;
+            }
+        })
+
         this.players.forEach((player) => {
             player.socket.emit('serverUpdate', { 
-                player1: this.players[0].entities_array, 
-                player2: this.players[1].entities_array
+                player1_entities: this.players[0].entities_array, 
+                player2_entities: this.players[1].entities_array,
+                player_current_actions: player_current_actions,
+                player_base_actions: player_base_actions
             }); 
         });
     }

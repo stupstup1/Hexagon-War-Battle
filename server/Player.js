@@ -29,13 +29,17 @@ class Player {
 	
     //data contains actionType, fromHex, and toHex. We add entity to it in here
     doAction(unitIndex, data) {
+        let performed = false
         data.entity = this.entities_array[unitIndex]
-        let performed = data.entity.doAction(data)
+        if (this.current_actions > 0) {
+            performed = data.entity.doAction(data)
+        }
         if (performed) {
+            console.log(performed)
             this.current_actions -= 1
             return performed
         }
-        return -1   
+        return false  
     }
 
     findServerEntity(entity, entities_array) {
@@ -79,13 +83,7 @@ class Player {
 		
 		return -1;
 	}
-	
-    moveUnit(unitIndex, toHex) {
-        this.entities_array[unitIndex].coords = {
-			x: toHex.col,
-			y: toHex.row
-		};
-    }
+
 }
 
 module.exports = { Player };

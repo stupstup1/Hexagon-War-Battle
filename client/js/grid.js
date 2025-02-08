@@ -46,6 +46,10 @@ $(document).ready(function() {
 
     // Entity tracking
     var entities = [];
+    let updateEntityData = {}
+    
+    //Actions tracking
+    let drawScreenData = {}
 	
     // Socket.IO setup
     var socket = window.socket; // Use the existing global socket
@@ -55,8 +59,11 @@ $(document).ready(function() {
     //-----------------------------------------------------------
 
     // Server initiated updating
-    socket.on('serverUpdate', function(playerData){
-		updateEntities(playerData);
+    socket.on('serverUpdate', function(data){
+        const { player1_entities, player2_entities, player_current_actions, player_base_actions } = data;
+        updateEntityData = { player1: player1_entities , player2: player2_entities }
+        drawScreenData = { player_current_actions: player_current_actions, player_base_actions: player_base_actions }
+		updateEntities();
         drawScreen();  // Redraw grid					
     });
 
@@ -181,33 +188,35 @@ $(document).ready(function() {
 		//Display actions remaining and food
         ctx.font = '20px Arial'; //I wanted to set the font at the top but it gets overwritten and I don't know why
         ctx.fillStyle = 'black';
-		actionsRemaining = 3
-		ctx.fillText('Remaining Actions: ' + actionsRemaining, 10, 30); // The numbers (10, 30) are the x and y coordinates
+		actionsRemaining = drawScreenData.player_current_actions;
+        baseActions = drawScreenData.player_base_actions;
+		ctx.fillText('Actions Remaining: ' + actionsRemaining + '/' + baseActions, 10, 30); // The numbers (10, 30) are the x and y coordinates
 		food = 5
 		ctx.fillText("Food: " + food, 10, 70); // The numbers (10, 30) are the x and y coordinates
     }
 
-    function updateEntities(playerData) {
+    function updateEntities() {
         // clear entities
         entities = Array.from(Array(rows), () => new Array(cols));
         ctx_units.clearRect(canvas_units.width/10, 0, canvas_units.width, canvas_units.height);  // Clear canvas, not action icons
         
         // for each player
-        for (let playerKey in playerData) {
-            const player = playerData[playerKey];
+        for (let playerKey in updateEntityData) {
+            const player = updateEntityData[playerKey];
             // for each player entity
             for (let i in player) {
                 const entity = player[i];
                 const entitySubtype = entity.subtype;
                 const col = entity.coords.x;
                 const row = entity.coords.y;
-                // add to the entities array
+                // add to the global entities array
                 entities[row][col] = [entitySubtype, playerKey, entity];
 
                 // then draw the entity
                 drawEntity(col, row, entitySubtype, playerKey);
             }
         }
+        drawUnitInfo(); //redraw entity remaining actions
     }
 
     function drawEntity(col, row, entityToDraw, playerKey) {
