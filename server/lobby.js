@@ -1,6 +1,6 @@
 // Import the Player class
 const { Player } = require('./Player');
-const { Entity, Unit, Building, Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult } = require('./entity');
+const { Entity, Unit, Building, Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult } = require('./Entity');
 
 // Lobby class to manage players and game state
 class Lobby {
