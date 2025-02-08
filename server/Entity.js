@@ -43,6 +43,10 @@ class Entity {
 			y: toHex.row
 		};
 	}
+
+	replenishActions() {
+		this.current_actions = this.max_actions;
+	}
 }
 
 class Unit extends Entity {

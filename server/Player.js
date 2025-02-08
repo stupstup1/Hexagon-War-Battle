@@ -51,10 +51,13 @@ class Player {
         return -1
     }
 
-	setTurn(isTurn) {
+	setTurn(isTurn) { 
         this.turn = isTurn;
-        this.current_actions = this.base_actions;
+        this.current_actions = this.base_actions; //replenish player actions
 		this.socket.emit('turnUpdate', { isTurn: this.turn }) //hides or displays end turn button
+        for (let entity of this.entities_array) {
+            entity.replenishActions()
+        }
     }
 	
     spawnUnit(entityType, x, y) {

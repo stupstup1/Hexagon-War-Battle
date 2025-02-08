@@ -158,6 +158,7 @@ class LobbyManager {
                 player.setTurn(false);
                 nextPlayer.setTurn(true);
             }
+            lobby.sendBoardUpdate(); //makes sure new player's current actions remaining are accurate
         });
 
         // Perform Action
