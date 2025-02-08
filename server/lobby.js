@@ -73,8 +73,10 @@ class Lobby {
 
         let player_current_actions = 0; //making sure these at least have a value
         let player_base_actions = 0;
+        let current_player_turn = 1;
         this.players.forEach((player) => { //figure out whose turn it is, send the total action count of that player
             if (player.turn) { 
+                current_player_turn = player.name;
                 player_current_actions = player.current_actions;
                 player_base_actions = player.base_actions;
             }
@@ -85,7 +87,8 @@ class Lobby {
                 player1_entities: this.players[0].entities_array, 
                 player2_entities: this.players[1].entities_array,
                 player_current_actions: player_current_actions,
-                player_base_actions: player_base_actions
+                player_base_actions: player_base_actions,
+                current_player_turn: current_player_turn
             }); 
         });
     }

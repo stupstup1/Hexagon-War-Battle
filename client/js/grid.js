@@ -49,7 +49,7 @@ $(document).ready(function() {
     let updateEntityData = {}
     
     //Actions tracking
-    let drawScreenData = {}
+    let drawPlayerInfoData = {}
 	
     // Socket.IO setup
     var socket = window.socket; // Use the existing global socket
@@ -60,11 +60,11 @@ $(document).ready(function() {
 
     // Server initiated updating
     socket.on('serverUpdate', function(data){
-        const { player1_entities, player2_entities, player_current_actions, player_base_actions } = data;
+        const { player1_entities, player2_entities, player_current_actions, player_base_actions, current_player_turn } = data;
         updateEntityData = { player1: player1_entities , player2: player2_entities }
-        drawScreenData = { player_current_actions: player_current_actions, player_base_actions: player_base_actions }
-		updateEntities();
-        drawScreen();  // Redraw grid					
+        drawPlayerInfoData = { player_current_actions: player_current_actions, player_base_actions: player_base_actions, current_player_turn: current_player_turn }
+		updateEntities(); // Redraw entities
+        drawScreen();  // Redraw grid, but really just want to redraw player info. But doing it this way avoids some visual annoyances that we could theoretically fix			
     });
 
     //-----------------------------------------------------------
@@ -184,15 +184,19 @@ $(document).ready(function() {
                 hexagons.push(drawHexagon(col, row, radius));
             }
         }
-		
-		//Display actions remaining and food
+        drawPlayerInfo(); //also draw Player Info
+    }
+
+    function drawPlayerInfo() { //Displays actions, food, and whose turn it is
         ctx.font = '20px Arial'; //I wanted to set the font at the top but it gets overwritten and I don't know why
         ctx.fillStyle = 'black';
-		actionsRemaining = drawScreenData.player_current_actions;
-        baseActions = drawScreenData.player_base_actions;
-		ctx.fillText('Actions Remaining: ' + actionsRemaining + '/' + baseActions, 10, 30); // The numbers (10, 30) are the x and y coordinates
-		food = 5
-		ctx.fillText("Food: " + food, 10, 70); // The numbers (10, 30) are the x and y coordinates
+		actionsRemaining = drawPlayerInfoData.player_current_actions;
+        baseActions = drawPlayerInfoData.player_base_actions;
+        playerName = drawPlayerInfoData.current_player_turn;
+		ctx.fillText('Actions Remaining: ' + actionsRemaining + '/' + baseActions, 10, 30); // The numbers are the x and y coordinates
+		food = 5 //needs updated to be dynamic later
+		ctx.fillText("Food: " + food, 10, 70);
+        ctx.fillText(playerName + ', Your Turn!', canvas.width/2.25, 30);
     }
 
     function updateEntities() {
