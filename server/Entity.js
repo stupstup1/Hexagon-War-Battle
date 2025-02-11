@@ -1,9 +1,9 @@
-const { Action } = require('./actions');
+import { Action } from './actions.js';
 
-class Entity {
+export class Entity {
     constructor(x, y, id) {
 		this.id = id;
-		this.actions;
+		this.actions = new Action([]);
 		this.max_actions = 0;
 		this.current_actions = 0; //current_actions is set in spawnUnit in Player.js
 		this.action_state = "";
@@ -20,11 +20,13 @@ class Entity {
 		this.subtype = ""
 		this.cost = 0
     }
-	//data contains entity, actionType, fromHex, and toHex
-	doAction(data) {
+	
+    // actionData contains { maxCoords, turnPlayer, waitingPlayer} and information relevant to an action which may change based on the specific action.
+	doAction(actionData) {
 		let performed = false
+
 		if (this.current_actions > 0) {
-			performed = this.actions.doAction(data)
+			performed = this.actions.doAction(this.action_state, this, actionData)
 		}
         if (performed) {
             this.current_actions -= 1
@@ -49,7 +51,7 @@ class Entity {
 	}
 }
 
-class Unit extends Entity {
+export class Unit extends Entity {
     constructor(x, y, id) {
         super(x, y, id);
 		this.actions = new Action(["Move", "Attack"]);
@@ -58,7 +60,7 @@ class Unit extends Entity {
     }
 }
 
-class Swordfighter extends Unit {
+export class Swordfighter extends Unit {
     constructor(x, y, id) {
         super(x, y, id);
 		this.max_HP = 3;
@@ -70,7 +72,7 @@ class Swordfighter extends Unit {
     }
 }
 
-class Archer extends Unit {
+export class Archer extends Unit {
     constructor(x, y, id) {
         super(x, y, id);
 		this.max_HP = 2;
@@ -82,7 +84,7 @@ class Archer extends Unit {
     }
 }
 
-class Cavalier extends Unit {
+export class Cavalier extends Unit {
     constructor(x, y, id) {
         super(x, y, id);
 		this.max_HP = 5;
@@ -94,7 +96,7 @@ class Cavalier extends Unit {
     }
 }
 
-class Catapult extends Unit {
+export class Catapult extends Unit {
     constructor(x, y, id) {
         super(x, y, id);
 		this.max_actions = 1;
@@ -107,7 +109,7 @@ class Catapult extends Unit {
     }
 }
 
-class Building extends Entity {
+export class Building extends Entity {
     constructor(x, y, id) {
         super(x, y, id);
 		this.movement_speed = 0;
@@ -115,7 +117,7 @@ class Building extends Entity {
     }
 }
 
-class Farm extends Building {
+export class Farm extends Building {
     constructor(x, y, id) {
         super(x, y, id);
 		this.action_array = [];
@@ -126,7 +128,7 @@ class Farm extends Building {
     }
 }
 
-class Barracks extends Building {
+export class Barracks extends Building {
     constructor(x, y, id) {
         super(x, y, id);
 		this.actions = new Action(["Spawn"]);
@@ -137,7 +139,7 @@ class Barracks extends Building {
     }
 }
 
-class Leader extends Entity {
+export class Leader extends Entity {
     constructor(x, y, id) {
         super(x, y, id);
 		this.actions = new Action(["Move", "Attack", "Build"]);
@@ -151,5 +153,3 @@ class Leader extends Entity {
 		this.subtype = "Leader"
     }
 }
-
-module.exports = { Entity, Unit, Building, Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult };

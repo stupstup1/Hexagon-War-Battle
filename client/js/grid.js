@@ -116,7 +116,7 @@ $(document).ready(function() {
             socket.emit("updateActionState", {ActionType: "Move", SelectedEntity: currentClickEntity}) //default action for Units/Leader is move
         }
         if (previousClickEntity && !currentClickEntity && canMove(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
-            performAction("Move", previousClickedHex, clickedHexagon);
+            performAction({toHex: clickedHexagon });
         } else
         {
             if (areHexesEqual(previousClickedHex,clickedHexagon)) {
@@ -229,12 +229,12 @@ $(document).ready(function() {
 
         // Calculate the center position of the hexagon
         const [x, y] = rowColToXandY(col, row);
-        let entX = x - radius + 5
-        let entY = y - radius + 5
+        let entX = x - radius * 0.75;
+        let entY = y - radius * 0.75;
         const img = new Image();
         img.src = 'img/' + playerKey + entityToDraw + '.png';
         img.onload = function() {
-            ctx_units.drawImage(img, entX, entY, 75, 75);
+            ctx_units.drawImage(img, entX, entY, radius * 1.45, radius * 1.45);
         };
     }
 	
@@ -262,13 +262,13 @@ $(document).ready(function() {
                 let img_width = 75
                 let img_length = 75
                 const img = new Image();
-                img.src = 'img/action' + actionType.toLowerCase() + '.png';
+                img.src = 'img/action' + actionType + '.png';
                 if (zoomedIcon && zoomedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) { //zoomedIcon
                     img_width = img_width * 1.25
                     img_length = img_length * 1.25
                 }
                 if (clickedIcon && clickedIcon.ActionType.toLowerCase() == actionType.toLowerCase()) { //clickedIcon
-                    img.src = 'img/action' + actionType.toLowerCase() + 'Select.png';
+                    img.src = 'img/action' + actionType + 'Select.png';
                 }
                 img.onload = () => {
                     ctx_units.drawImage(img, x, y, img_width, img_length);
@@ -384,8 +384,8 @@ $(document).ready(function() {
     //ACTION LOGIC
     //-----------------------------------------------------------
     
-    function performAction(actionType, fromHex, toHex) {
-        socket.emit('performAction', { actionType: actionType, fromHex: fromHex, toHex: toHex })
+    function performAction(data) {
+        socket.emit('performAction', data);
     }
 
 	// Directions corresponding to the 6 possible moves in a hexagonal grid from an even column
