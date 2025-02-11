@@ -18,7 +18,7 @@ export class Action {
 	Player;
 	AllowedActions;
 
-	actionTypes = ["Move","Attack","Build","Spawn","GenerateFood","GenerateActions"]
+	actionTypes = ["","Move","Attack","Build","Spawn","GenerateFood","GenerateActions"]
 	
 	constructor(allowedActions, player) {
 		this.AllowedActions = allowedActions;
@@ -26,20 +26,25 @@ export class Action {
 		return;
 	}
 	
-	//data contains entity, actionType, fromHex, and toHex
-	doAction(data) {
-		if (!data  || !data.actionType) {return;} //Quit if no data or if action is null
-		if (!data.actionType.indexOf(this.actionTypes) || data.actionType !== data.entity.action_state) {return;} //Quit if not a valid action or if action doesn't match entity.action_state
-		let performed = this.DoActionMap[data.actionType](data);
+    // actionData contains { maxCoords, turnPlayer, waitingPlayer} and information relevant to an action which may change based on the specific action.
+	doAction(actionType, entity, actionData) {
+		if (!actionType) {return;} //Quit if no data or if action is null
+		if (this.actionTypes.indexOf(actionType) === -1 || actionType !== entity.action_state) {return;} //Quit if not a valid action or if action doesn't match entity.action_state
+		
+		if (!this.CanDoActionMap[actionType](actionData)) {return;} // Quit if we can not do the action
+
+		actionData.entity = entity;
+		let performed = this.DoActionMap[actionType](actionData);
 		return performed
 	}
 
 	setActionState(actionType) {
-		if (!actionType.indexOf(this.actionTypes)) {return;} //Quit if not a valid action
-		let action_state = this.CanDoActionMap[actionType](); //set the action_state variable by calling the appropriate function
-		return action_state
+		if (this.actionTypes.indexOf(actionType) === -1) { return; } //Quit if not a valid action
+		if (this.AllowedActions.indexOf(actionType) === -1) { return; } // Quit if the action type is not available to the specific entity
+		return actionType;
 	}
 	
+	// move data contains: { maxCoords, turnPlayer, waitingPlayer, entity, toHex }
 	Move(data) {
 		data.entity.coords = {
 			x: data.toHex.col,
@@ -68,32 +73,37 @@ export class Action {
 		return true
 	}
 
-	CanMove() {
-		console.log("We can move!");
-		return "Move"
+	// move data contains: { maxCoords, turnPlayer, waitingPlayer, toHex }
+	CanMove(data) {
+		const { maxCoords, turnPlayer, waitingPlayer, toHex} = data;
+
+		if (toHex.col < 0 || toHex.col > maxCoords.x ||
+			toHex.row < 0 || toHex.row > maxCoords.y) { return false; } // Quit if toHex is out of bounds
+		if (turnPlayer.hasUnitOnHex(toHex) || waitingPlayer.hasUnitOnHex(toHex)) { return false; } // Quit if toHex is occupied
+		return true;
 	}
 
-	CanAttack(){
+	CanAttack(data){
 		console.log("We can attack!");
 		return "Attack"
 	}
 
-	CanBuild(){
+	CanBuild(data){
 		console.log("We can build!");
 		return "Build"
 	}
 
-	CanSpawn(){
+	CanSpawn(data){
 		console.log("We can spawn!");
 		return "Spawn"
 	}
 
-	CanGenerateFood(){
+	CanGenerateFood(data){
 		console.log("We can generate food!");
 		return "GenerateFood"
 	}
 
-	CanGenerateActions(){
+	CanGenerateActions(data){
 		console.log("We can generate actions!");
 		return "GenerateActions"
 	}

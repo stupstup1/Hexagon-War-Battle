@@ -1,13 +1,14 @@
 // Import the Entity class
-const { Entity, Unit, Building, Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult } = require('./Entity');
+import { Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult } from './Entity.js';
 
-class Player {
+export class Player {
     constructor(socket) {
         this.socket = socket;
         this.name = '';
 		this.playerNumber = 0;
         this.turn = false;  // Indicates if it's the player's turn
-		this.entities_array = []
+		this.entities_array = [];
+        this.entitiyIndexWithActionState = -1;
         this.current_actions = 0;
 		this.base_actions = 3
         this.ID_count = 0 //this is for assigning entities unique IDs to later identify them
@@ -20,40 +21,65 @@ class Player {
             Barracks: Barracks,
             Farm: Farm
         }
+
         socket.on("updateActionState", (data) => {
             if (!data.SelectedEntity) {return; }
-            let thisEntity = this.findServerEntity(data.SelectedEntity, this.entities_array)
-            thisEntity.setActionState(data.ActionType);
+            let [thisEntity, entityIndex] = this.findServerEntity(data.SelectedEntity);
+
+            if (entityIndex >= 0) {
+                this.clearServerEntityActionStates();
+
+                thisEntity.setActionState(data.ActionType);
+                this.entitiyIndexWithActionState = entityIndex;
+            }
         });
     }
 	
-    //data contains actionType, fromHex, and toHex. We add entity to it in here
-    doAction(unitIndex, data) {
-        let performed = false
-        data.entity = this.entities_array[unitIndex]
+    // actionData contains { maxCoords, turnPlayer, waitingPlayer} and information relevant to an action which may change based on the specific action.
+    doAction(actionData) {
+        let performed = false;
+
+        // early exit if entity with action is no longer available to the player (example: if the entity was killed)
+        if (this.entitiyIndexWithActionState < 0 || this.entitiyIndexWithActionState >= this.entities_array.length) {
+            this.entitiyIndexWithActionState = -1;
+            return false;
+        }
+
+        const entityWithAction = this.entities_array[this.entitiyIndexWithActionState];
         if (this.current_actions > 0) {
-            performed = data.entity.doAction(data)
+            performed = entityWithAction.doAction(actionData);
         }
         if (performed) {
             this.current_actions -= 1
-            return performed
+            return true;
         }
         return false  
     }
 
-    findServerEntity(entity, entities_array) {
-        for (let Unit of entities_array){
-            if (Unit.id === entity.id) {  //if the entity's ID matches the entity actually recognized as an entity's ID on the server...
-                return Unit
+    // clears all action states on a user. ran in preperation of setting another entities action
+    //  so that only one entity has an action state per user at a time
+    clearServerEntityActionStates() {
+        for (let entity of this.entities_array){
+            entity.setActionState("");
+        }
+        this.entitiyIndexWithActionState = -1;
+    }
+
+    findServerEntity(entity) {
+        for (var i in this.entities_array){
+            const unit = this.entities_array[i];
+            if (unit.id === entity.id) {  //if the entity's ID matches the entity actually recognized as an entity's ID on the server...
+                return [unit, i];
             }
         } 
-        return -1
+        return [{}, -1];
     }
 
 	setTurn(isTurn) { 
         this.turn = isTurn;
         this.current_actions = this.base_actions; //replenish player actions
 		this.socket.emit('turnUpdate', { isTurn: this.turn }) //hides or displays end turn button
+        this.clearServerEntityActionStates();
         for (let entity of this.entities_array) {
             entity.replenishActions()
         }
@@ -75,17 +101,15 @@ class Player {
         this.entities_array = [];
     }
 	
-	getUnitIfIsMine(fromHex) {
+	hasUnitOnHex(targetHex) {
 		for (var i in this.entities_array) {
             const unit = this.entities_array[i];
-            if (fromHex && unit.coords.x == fromHex.col && unit.coords.y == fromHex.row) {
-				return i;
+            if (targetHex && unit.coords.x == targetHex.col && unit.coords.y == targetHex.row) {
+				return true;
             }
         }
 		
-		return -1;
+		return false;
 	}
 
 }
-
-module.exports = { Player };

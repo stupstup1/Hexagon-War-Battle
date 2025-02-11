@@ -1,15 +1,17 @@
 // Import the Player class
-const { Player } = require('./Player');
-const { Entity, Unit, Building, Leader, Farm, Barracks, Swordfighter, Archer, Cavalier, Catapult } = require('./Entity');
+import { Player } from './Player.js';
 
 // Lobby class to manage players and game state
-class Lobby {
+export class Lobby {
     constructor(id) {
         this.id = id;
         this.players = []; // Array to store players (sockets)
         this.maxPlayers = 2; // Max players per lobby (change as necessary)
         this.gameStarted = false; // Track if the game has started
-		this.updateInterval = 1000 / 60;  // 1000 ms / 60 FPS = ~16.67 ms per frame
+        this.maxCoords = { 
+			x: 14, 
+			y: 6 
+		}
     }
 
     // Add a player to the lobby and emit a name request
@@ -40,9 +42,9 @@ class Lobby {
         this.players[0].spawnUnit("Leader", 0, 3)
         this.players[0].spawnUnit("Barracks", 0, 4)
         this.players[0].spawnUnit("Farm", 0, 2)
-        this.players[1].spawnUnit("Leader", 14, 3)
-        this.players[1].spawnUnit("Barracks", 14, 4)
-        this.players[1].spawnUnit("Farm", 14, 2)
+        this.players[1].spawnUnit("Leader", this.maxCoords.x, 3)
+        this.players[1].spawnUnit("Barracks", this.maxCoords.x, 4)
+        this.players[1].spawnUnit("Farm", this.maxCoords.x, 2)
 		
 		// start the game
         this.players.forEach((player) => {
@@ -95,7 +97,7 @@ class Lobby {
 }
 
 // Lobby manager to handle multiple lobbies
-class LobbyManager {
+export default class LobbyManager {
     constructor() {
         this.lobbies = {}; // Store lobbies by ID
         this.lobbyCounter = 0; // To generate unique lobby IDs
@@ -166,17 +168,20 @@ class LobbyManager {
 
         // Perform Action
         socket.on('performAction', function(data) {
-            const { actionType, fromHex, toHex } = data;
             for (var i in lobby.players) {
                 const player = lobby.players[i];
-				const unitIndex = player.getUnitIfIsMine(fromHex);
-				if (unitIndex == -1 || player.socket !== socket) { continue; } // prevent performing actions with units that aren't yours
-				if (!player.turn) {continue; } // prevent performing actions if its not your turn
-				if (player.doAction(unitIndex, data)){
-				    let performed = true;
-                    if (performed) {
-                        lobby.sendBoardUpdate();
-                    }
+
+				if (player.turn) { data.turnPlayer = player } 
+                else { data.waitingPlayer = player }
+            }
+
+            if (data.turnPlayer.socket !== socket) { return; } // don't let socket of non-turn player perform actions for turn player
+
+            data.maxCoords = lobby.maxCoords;
+            if (data.turnPlayer?.doAction(data)){
+                let performed = true;
+                if (performed) {
+                    lobby.sendBoardUpdate();
                 }
             }
         });         
@@ -194,5 +199,3 @@ class LobbyManager {
         }
     }
 }
-
-module.exports = new LobbyManager();
