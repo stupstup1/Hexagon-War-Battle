@@ -71,6 +71,8 @@ Todo:
 -fix size scaling of everything
 -get rid of screen flashing action icons
 -handle premature disconnects by showing win screen
+-security concerns:
+	server doest check valid distances
 
 Extra:
 -highlighting other player's unit movement? maybe different color?

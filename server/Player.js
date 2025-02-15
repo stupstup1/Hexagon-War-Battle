@@ -8,7 +8,7 @@ export class Player {
 		this.playerNumber = 0;
         this.turn = false;  // Indicates if it's the player's turn
 		this.entities_array = [];
-        this.entitiyIndexWithActionState = -1;
+        this.entityIndexWithActionState = -1;
         this.current_actions = 0;
 		this.base_actions = 3
         this.ID_count = 0 //this is for assigning entities unique IDs to later identify them
@@ -30,23 +30,26 @@ export class Player {
                 this.clearServerEntityActionStates();
 
                 thisEntity.setActionState(data.ActionType);
-                this.entitiyIndexWithActionState = entityIndex;
+                this.entityIndexWithActionState = entityIndex;
             }
         });
     }
 	
-    // actionData contains { maxCoords, turnPlayer, waitingPlayer} and information relevant to an action which may change based on the specific action.
+    // actionData contains { maxCoords, turnPlayer, waitingPlayer, fromEntity, toHex} and information relevant to an action which may change based on the specific action.
     doAction(actionData) {
         let performed = false;
 
         // early exit if entity with action is no longer available to the player (example: if the entity was killed)
-        if (this.entitiyIndexWithActionState < 0 || this.entitiyIndexWithActionState >= this.entities_array.length) {
-            this.entitiyIndexWithActionState = -1;
+        if (this.entityIndexWithActionState < 0 || this.entityIndexWithActionState >= this.entities_array.length) {
+            this.entityIndexWithActionState = -1;
             return false;
         }
 
-        const entityWithAction = this.entities_array[this.entitiyIndexWithActionState];
-        if (this.current_actions > 0) {
+        const entityWithAction = this.entities_array[this.entityIndexWithActionState];
+        const [clientClickedEntity, clientClickedEntityIndex]  = this.findServerEntity(actionData.fromEntity);
+        if (this.current_actions > 0 // has enough actions
+            && clientClickedEntityIndex !== -1 && entityWithAction.id === clientClickedEntity.id) // action is being performed on the right unit
+        {
             performed = entityWithAction.doAction(actionData);
         }
         if (performed) {
@@ -62,13 +65,13 @@ export class Player {
         for (let entity of this.entities_array){
             entity.setActionState("");
         }
-        this.entitiyIndexWithActionState = -1;
+        this.entityIndexWithActionState = -1;
     }
 
     findServerEntity(entity) {
         for (var i in this.entities_array){
             const unit = this.entities_array[i];
-            if (unit.id === entity.id) {  //if the entity's ID matches the entity actually recognized as an entity's ID on the server...
+            if (unit.coords.x == entity.coords.x && unit.coords.y == entity.coords.y) {  //if the entity's ID matches the entity actually recognized as an entity's ID on the server...
                 return [unit, i];
             }
         } 

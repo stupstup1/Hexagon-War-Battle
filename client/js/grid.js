@@ -49,6 +49,7 @@ $(document).ready(function() {
     let updateEntityData = {}
     
     //Actions tracking
+    let currentAction = "";
     let drawPlayerInfoData = {}
 	
     // Socket.IO setup
@@ -113,22 +114,42 @@ $(document).ready(function() {
     function onHexagonClicked(previousClickEntity, previousClickedHex) {
         const currentClickEntity = getEntityAtHex(clickedHexagon);
         if (currentClickEntity && ["Unit", "Leader"].includes(currentClickEntity.type)) {
-            socket.emit("updateActionState", {ActionType: "Move", SelectedEntity: currentClickEntity}) //default action for Units/Leader is move
+            updateActionState("Move", currentClickEntity);
         }
-        if (previousClickEntity && !currentClickEntity && canMove(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
-            performAction({toHex: clickedHexagon });
-        } else
+
+        switch(currentAction)
         {
-            if (areHexesEqual(previousClickedHex,clickedHexagon)) {
-                clickedHexagon = null //unselects a previously selected hexagon
-            }
-            //Display actions to choose from
-            drawUnitInfo();
+            case "Move":
+                if (previousClickEntity && !currentClickEntity && canReach(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
+                    performAction({fromEntity: previousClickEntity, toHex: clickedHexagon });
+                    return;
+                }
+                break;
+            case "Attack":
+                if (previousClickEntity && !currentClickEntity && canReach(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
+                    performAction({fromEntity: previousClickEntity, toHex: clickedHexagon });
+                    return;
+                }
+                break;
+            default:
+                break;
         }
+
+        if (areHexesEqual(previousClickedHex,clickedHexagon)) {
+            clickedHexagon = null //unselects a previously selected hexagon
+        }
+        //Display actions to choose from
+        drawUnitInfo();
     }
 
     function onIconClicked(clickedIcon, previousClickEntity) {
-        socket.emit("updateActionState", {ActionType: clickedIcon.ActionType, SelectedEntity: previousClickEntity})
+        updateActionState(clickedIcon.ActionType, previousClickEntity);
+    }
+
+    function updateActionState(actionType, selectedEntity)
+    {
+        socket.emit("updateActionState", {ActionType: actionType, SelectedEntity: selectedEntity})
+        currentAction = actionType;
         drawUnitInfo(); //should update the icon to be green
     }
 
@@ -155,7 +176,7 @@ $(document).ready(function() {
 		const currentHex = { x, y, radius, col: col, row: row, id: `${row}-${col}` };
         ctx.closePath();
 		const clickedEntity = getEntityAtHex(clickedHexagon);
-		if (clickedEntity && canMove(clickedHexagon,currentHex, clickedEntity.movement_speed)) {
+		if (clickedEntity && canReach(clickedHexagon,currentHex, clickedEntity.movement_speed)) {
 				ctx.fillStyle = highlightedColorCanMove;
 		} else {
 			ctx.fillStyle = defaultColor;  // Default color
@@ -385,6 +406,7 @@ $(document).ready(function() {
     //-----------------------------------------------------------
     
     function performAction(data) {
+        
         socket.emit('performAction', data);
     }
 
@@ -409,14 +431,14 @@ $(document).ready(function() {
 	];
 
 	// Function to check if a position is valid (within bounds and not occupied)
-	function isValid(x, y) {
+	function isValid(x, y, ignoreUnits) {
 		// Check if within grid bounds
 		if (x < 0 || x >= cols || y < 0 || y >= rows) {
 			return false;
 		}
 		
 		// Check if tile is occupied
-		if (entities[y][x]) {
+		if (entities[y][x] && !ignoreUnits) {
 			return false;
 		}
 		
@@ -424,7 +446,7 @@ $(document).ready(function() {
 	}
 
 	// BFS function to determine if we can reach the destination
-	function canMove(start, end, maxMoves) {
+	function canReach(start, end, maxMoves, ignoreUnits) {
 		const queue = [{ ...start, moves: 0 }];
 		const visited = new Set();
 		visited.add(`${start.col},${start.row}`);
@@ -450,7 +472,7 @@ $(document).ready(function() {
 				const newY = current.row + dir.y;
 				
 				// Only process valid and unvisited hexagons
-				if (isValid(newX, newY) &&
+				if (isValid(newX, newY, ignoreUnits) &&
 					!visited.has(`${newX},${newY}`) &&
 					current.moves + 1 <= maxMoves) {
 					

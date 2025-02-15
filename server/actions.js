@@ -18,7 +18,7 @@ export class Action {
 	Player;
 	AllowedActions;
 
-	actionTypes = ["","Move","Attack","Build","Spawn","GenerateFood","GenerateActions"]
+	actionTypes = ["","Move","Attack","Build","Spawn","GenerateFood","GenerateActions"];
 	
 	constructor(allowedActions, player) {
 		this.AllowedActions = allowedActions;
