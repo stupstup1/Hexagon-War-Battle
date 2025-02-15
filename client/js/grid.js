@@ -61,9 +61,9 @@ $(document).ready(function() {
 
     // Server initiated updating
     socket.on('serverUpdate', function(data){
-        const { player1_entities, player2_entities, player_current_actions, player_base_actions, current_player_turn } = data;
+        const { player1_entities, player2_entities, player_current_actions, player_base_actions, current_player_turn, player_current_food } = data;
         updateEntityData = { player1: player1_entities , player2: player2_entities }
-        drawPlayerInfoData = { player_current_actions: player_current_actions, player_base_actions: player_base_actions, current_player_turn: current_player_turn }
+        drawPlayerInfoData = { player_current_actions: player_current_actions, player_base_actions: player_base_actions, current_player_turn: current_player_turn, player_current_food: player_current_food }
 		updateEntities(); // Redraw entities
         drawScreen();  // Redraw grid, but really just want to redraw player info. But doing it this way avoids some visual annoyances that we could theoretically fix			
     });
@@ -215,7 +215,7 @@ $(document).ready(function() {
         baseActions = drawPlayerInfoData.player_base_actions;
         playerName = drawPlayerInfoData.current_player_turn;
 		ctx.fillText('Actions Remaining: ' + actionsRemaining + '/' + baseActions, 10, 30); // The numbers are the x and y coordinates
-		food = 5 //needs updated to be dynamic later
+		food = drawPlayerInfoData.player_current_food;
 		ctx.fillText("Food: " + food, 10, 70);
         ctx.fillText(playerName + ', Your Turn!', canvas.width/2.25, 30);
     }

@@ -21,6 +21,7 @@ export class Player {
             Barracks: Barracks,
             Farm: Farm
         }
+        this.currentFood = 5;
 
         socket.on("updateActionState", (data) => {
             if (!data.SelectedEntity) {return; }
@@ -114,5 +115,19 @@ export class Player {
 		
 		return false;
 	}
+
+    calculateEndOfTurnFood() {
+        let endOfTurnFood = 0;
+
+        for (let entity of this.entities_array) {
+            endOfTurnFood += entity.foodAdded;
+        }
+
+        return endOfTurnFood;
+    }
+
+    addFood(foodCount) {
+        this.currentFood += foodCount;
+    }
 
 }

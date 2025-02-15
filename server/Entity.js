@@ -15,10 +15,11 @@ export class Entity {
 		this.coords = { 
 			x:x, 
 			y:y 
-		}
-		this.type = ""
-		this.subtype = ""
-		this.cost = 0
+		};
+		this.type = "";
+		this.subtype = "";
+		this.cost = 0;
+		this.foodAdded = 0;
     }
 	
     // actionData contains { maxCoords, turnPlayer, waitingPlayer} and information relevant to an action which may change based on the specific action.
@@ -125,6 +126,7 @@ export class Farm extends Building {
 		this.max_HP = 5;
 		this.subtype = "Farm"
 		this.cost = 5
+		this.foodAdded = 2;
     }
 }
 
