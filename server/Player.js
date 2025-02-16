@@ -115,4 +115,23 @@ export class Player {
 		return false;
 	}
 
+    attackEntityOnHex(attackingEntity, targetHex)
+    {
+        for (var i in this.entities_array) {
+            const attackedUnit = this.entities_array[i];
+            if (targetHex && attackedUnit.coords.x == targetHex.col && attackedUnit.coords.y == targetHex.row) {
+                const remainingHealth = attackedUnit.current_HP - attackingEntity.attack_dmg;
+
+                if (remainingHealth > 0)
+                {
+                    this.entities_array[i].current_HP = remainingHealth;
+                } else {
+                    this.entities_array.splice(i , 1);
+                }
+
+                return;
+            }
+        }
+    }
+
 }

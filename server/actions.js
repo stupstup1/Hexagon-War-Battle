@@ -44,7 +44,7 @@ export class Action {
 		return actionType;
 	}
 	
-	// move data contains: { maxCoords, turnPlayer, waitingPlayer, entity, toHex }
+	// move data contains: { maxCoords, turnPlayer, waitingPlayer, fromEntity, toHex }
 	Move(data) {
 		data.entity.coords = {
 			x: data.toHex.col,
@@ -52,9 +52,13 @@ export class Action {
 		};
 		return true
 	}
-
+	
+	// move data contains: { maxCoords, turnPlayer, waitingPlayer, fromEntity, toHex }
 	Attack(data){
-		return true
+		const { waitingPlayer, fromEntity, toHex } = data;
+
+		waitingPlayer.attackEntityOnHex(fromEntity, toHex);
+		return true;
 	}
 
 	Build(data){
@@ -73,7 +77,7 @@ export class Action {
 		return true
 	}
 
-	// move data contains: { maxCoords, turnPlayer, waitingPlayer, toHex }
+	// move data contains: { maxCoords, turnPlayer, waitingPlayer, fromEntity, toHex }
 	CanMove(data) {
 		const { maxCoords, turnPlayer, waitingPlayer, toHex} = data;
 
@@ -83,9 +87,14 @@ export class Action {
 		return true;
 	}
 
+	// move data contains: { maxCoords, turnPlayer, waitingPlayer, fromEntity, toHex }
 	CanAttack(data){
-		console.log("We can attack!");
-		return "Attack"
+		const { maxCoords, waitingPlayer, toHex} = data;
+
+		if (toHex.col < 0 || toHex.col > maxCoords.x ||
+			toHex.row < 0 || toHex.row > maxCoords.y) { console.log("max"); return false; } // Quit if toHex is out of bounds
+		if (!waitingPlayer.hasUnitOnHex(toHex)) { return false; } // Quit if toHex does not have an enemy unit
+		return true;
 	}
 
 	CanBuild(data){

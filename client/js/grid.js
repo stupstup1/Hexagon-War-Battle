@@ -42,6 +42,7 @@ $(document).ready(function() {
     const clickedColor = 'yellow';
 	const highlightedColor = 'lightyellow';
 	const highlightedColorCanMove = 'lightgreen';
+    const highlightedColorCanAttack = '#FF6961';
 	const defaultColor = 'lightblue';
 
     // Entity tracking
@@ -86,6 +87,8 @@ $(document).ready(function() {
  	// Mouse click listeners
     canvas_units.addEventListener('click', (event) => {
         let updateClickedHexagon;
+        let detectedHexagon = detectHexagon(event)
+
         const previousClickEntity = getEntityAtHex(clickedHexagon);
         const previousClickedHex = clickedHexagon;
 		
@@ -93,15 +96,20 @@ $(document).ready(function() {
         if (clickedIcon) {
             onIconClicked(clickedIcon, previousClickEntity);
         }
-        if (!clickedIcon) {//Nesting clickedHexagon like this prevents deselecting units when clicking their actions
-            clickedHexagon = detectHexagon(event);
-            updateClickedHexagon = true
+        else if (currentAction === "Attack" && PLAYERNUMBER !== getPlayerKeyAtHex(detectedHexagon) && canReach(previousClickedHex, detectedHexagon, previousClickEntity.attack_rng, true)) {
+            // when attacking and you click on an enemy do the attack, but don't update clicked hexagon
+            performAction({fromEntity: previousClickEntity, toHex: detectedHexagon });
+        }
+        else {//Nesting clickedHexagon like this prevents deselecting units when clicking their actions
+            clickedHexagon = detectedHexagon;
+            updateClickedHexagon = true;
             if (!clickedHexagon) { //If we didn't click an icon nor a hexagon...
                 drawUnitInfo() //clear action icons
             } 
         }
+
         if (clickedHexagon && updateClickedHexagon) { 
-            onHexagonClicked(previousClickEntity, previousClickedHex); //selects a hexagon when clicking. If clicking previously selected hexagon, unselect it!
+            onHexagonClicked(previousClickEntity, previousClickedHex);
         }        
 		//update the fuckig screen
 		drawScreen();
@@ -113,7 +121,7 @@ $(document).ready(function() {
 
     function onHexagonClicked(previousClickEntity, previousClickedHex) {
         const currentClickEntity = getEntityAtHex(clickedHexagon);
-        if (currentClickEntity && ["Unit", "Leader"].includes(currentClickEntity.type)) {
+        if (currentClickEntity && ["Unit", "Leader"].includes(currentClickEntity.type) && !areHexesEqual(previousClickedHex,clickedHexagon)) {
             updateActionState("Move", currentClickEntity);
         }
 
@@ -126,7 +134,8 @@ $(document).ready(function() {
                 }
                 break;
             case "Attack":
-                if (previousClickEntity && !currentClickEntity && canReach(previousClickedHex, clickedHexagon, previousClickEntity.movement_speed)) {
+                if (previousClickEntity && canReach(clickedHexagon, previousClickedHex, previousClickEntity.attack_rng, true)) {
+                    console.log("attack");
                     performAction({fromEntity: previousClickEntity, toHex: clickedHexagon });
                     return;
                 }
@@ -135,9 +144,6 @@ $(document).ready(function() {
                 break;
         }
 
-        if (areHexesEqual(previousClickedHex,clickedHexagon)) {
-            clickedHexagon = null //unselects a previously selected hexagon
-        }
         //Display actions to choose from
         drawUnitInfo();
     }
@@ -175,11 +181,28 @@ $(document).ready(function() {
 		
 		const currentHex = { x, y, radius, col: col, row: row, id: `${row}-${col}` };
         ctx.closePath();
+        ctx.fillStyle = defaultColor;  // Default color
+		
 		const clickedEntity = getEntityAtHex(clickedHexagon);
-		if (clickedEntity && canReach(clickedHexagon,currentHex, clickedEntity.movement_speed)) {
-				ctx.fillStyle = highlightedColorCanMove;
-		} else {
-			ctx.fillStyle = defaultColor;  // Default color
+        if (clickedEntity) 
+        {
+            switch (currentAction)
+            {
+                case "Move":
+                    if (PLAYERNUMBER === getPlayerKeyAtHex(clickedHexagon) && canReach(clickedHexagon,currentHex, clickedEntity.movement_speed))
+                    {
+				        ctx.fillStyle = highlightedColorCanMove;
+                    }
+                    break;
+                case "Attack":
+                    if (canReach(clickedHexagon,currentHex, clickedEntity.attack_rng, true))
+                    {
+                        ctx.fillStyle = highlightedColorCanAttack;
+                    }
+                    break;
+                default:
+                    break;
+            }
 		}
 		
 		if (clickedHexagon && clickedHexagon.x == x && clickedHexagon.y == y){
