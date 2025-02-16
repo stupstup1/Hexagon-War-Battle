@@ -76,11 +76,13 @@ export class Lobby {
         let player_current_actions = 0; //making sure these at least have a value
         let player_base_actions = 0;
         let current_player_turn = 1;
+        let player_current_food = 0;
         this.players.forEach((player) => { //figure out whose turn it is, send the total action count of that player
             if (player.turn) { 
                 current_player_turn = player.name;
                 player_current_actions = player.current_actions;
                 player_base_actions = player.base_actions;
+                player_current_food = player.currentFood;
             }
         })
 
@@ -90,7 +92,8 @@ export class Lobby {
                 player2_entities: this.players[1].entities_array,
                 player_current_actions: player_current_actions,
                 player_base_actions: player_base_actions,
-                current_player_turn: current_player_turn
+                current_player_turn: current_player_turn,
+                player_current_food: player_current_food
             }); 
         });
     }
@@ -162,6 +165,7 @@ export default class LobbyManager {
                 const nextPlayer = lobby.players.find(p => p !== player);
                 player.setTurn(false);
                 nextPlayer.setTurn(true);
+                nextPlayer.addFood(nextPlayer.calculateEndOfTurnFood());
             }
             lobby.sendBoardUpdate(); //makes sure new player's current actions remaining are accurate
         });
