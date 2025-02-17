@@ -11,7 +11,6 @@ export class Player {
         this.entityIndexWithActionState = -1;
         this.current_actions = 0;
 		this.base_actions = 3
-        this.ID_count = 0 //this is for assigning entities unique IDs to later identify them
         this.EntityMap = {
             Leader: Leader,
             Swordfighter: Swordfighter,
@@ -89,12 +88,14 @@ export class Player {
         }
     }
 	
-    spawnUnit(entityType, x, y) {
-        this.ID_count += 1
-        const newUnit = new this.EntityMap[entityType](x, y, this.ID_count);
+    spawnUnit(entityType, x, y, forFree) {
+        const newUnit = new this.EntityMap[entityType](x, y, this);
         newUnit.current_HP = newUnit.max_HP;
         newUnit.current_actions = newUnit.max_actions;
         this.addUnit(newUnit)
+        if (!forFree) {
+            this.addFood(newUnit.cost * -1);
+        }
     }
 
 	addUnit(unit) {	
@@ -106,9 +107,8 @@ export class Player {
     }
 	
 	hasUnitOnHex(targetHex) {
-		for (var i in this.entities_array) {
-            const unit = this.entities_array[i];
-            if (targetHex && unit.coords.x == targetHex.col && unit.coords.y == targetHex.row) {
+		for (let entity of this.entities_array) {
+            if (targetHex && entity.coords.x === targetHex.col && entity.coords.y === targetHex.row) {
 				return true;
             }
         }

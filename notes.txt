@@ -62,17 +62,18 @@ Todo:
 -show units stats when you select them
 -individual actions framework
 	-moving is default action
-	-build action
 	-attack action
-	-spawn action
--food generation & spending
+- Submenu for build/spawn actions to choose building/unit.
+- Still need to show appropriate radius for build/spawn actions.
 -turn timer
 -win/lose screen
 -fix size scaling of everything
 -get rid of screen flashing action icons
 -handle premature disconnects by showing win screen
--security concerns:
-	server doest check valid distances
+-Consider having player 1's information always displayed on the left and player 2's information always display on the right. Currently displayed based on turn, confusing.
+-Consider adding some indicator of which player you are, confusing.
+-We should set an agreed upon code style standard. Currently a mix of PascalCase, camelCase, and under_line.
+-Hovering over the canvas before both players enters the game displays the grid and undefined player info. Should not do that.
 
 Extra:
 -highlighting other player's unit movement? maybe different color?

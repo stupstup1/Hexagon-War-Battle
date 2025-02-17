@@ -140,6 +140,16 @@ $(document).ready(function() {
                     return;
                 }
                 break;
+            case "Build":
+                if (previousClickEntity && !currentClickEntity && canReach(previousClickedHex, clickedHexagon, previousClickEntity.spawnRange)) {
+                    performAction({fromEntity: previousClickEntity, newEntityType: "Farm", toHex: clickedHexagon });
+                }
+                break;
+            case "Spawn":
+                if (previousClickEntity && !currentClickEntity && canReach(previousClickedHex, clickedHexagon, previousClickEntity.spawnRange)) {
+                    performAction({fromEntity: previousClickEntity, newEntityType: "Leader", toHex: clickedHexagon});
+                }
+                break;
             default:
                 break;
         }
@@ -189,9 +199,9 @@ $(document).ready(function() {
             switch (currentAction)
             {
                 case "Move":
-                    if (PLAYERNUMBER === getPlayerKeyAtHex(clickedHexagon) && canReach(clickedHexagon,currentHex, clickedEntity.movement_speed))
+                    if (PLAYERNUMBER === getPlayerKeyAtHex(clickedHexagon) && currentAction && canReach(clickedHexagon,currentHex, clickedEntity.movement_speed))
                     {
-				        ctx.fillStyle = highlightedColorCanMove;
+			        ctx.fillStyle = highlightedColorCanMove;
                     }
                     break;
                 case "Attack":
@@ -205,7 +215,7 @@ $(document).ready(function() {
             }
 		}
 		
-		if (clickedHexagon && clickedHexagon.x == x && clickedHexagon.y == y){
+		if (clickedHexagon && clickedHexagon.x == x && clickedHexagon.y == y) {
 			ctx.fillStyle = clickedColor;  // Don't override clicked hexagon
 		} else if (highlightedHexagon && highlightedHexagon.x == x && highlightedHexagon.y == y){
 			ctx.fillStyle = highlightedColor;  // Don't override clicked hexagon

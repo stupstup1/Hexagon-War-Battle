@@ -1,14 +1,13 @@
 import { Action } from './actions.js';
 
 export class Entity {
-    constructor(x, y, id) {
-		this.id = id;
+    constructor(x, y) {
 		this.actions = new Action([]);
 		this.max_actions = 0;
-		this.current_actions = 0; //current_actions is set in spawnUnit in Player.js
+		this.current_actions = 0; //current_actions is set in spawnUnit in Player.js. Why?
 		this.action_state = "";
 		this.max_HP = 0;
-		this.current_HP = 0; //current_HP is set in spawnUnit in Player.js
+		this.current_HP = 0; //current_HP is set in spawnUnit in Player.js. Why?
 		this.attack_dmg = 0;
 		this.attack_rng = 0;
 		this.movement_speed = 0;
@@ -20,6 +19,7 @@ export class Entity {
 		this.subtype = "";
 		this.cost = 0;
 		this.foodAdded = 0;
+		this.spawnRange = 1;
     }
 	
     // actionData contains { maxCoords, turnPlayer, waitingPlayer} and information relevant to an action which may change based on the specific action.
@@ -27,7 +27,7 @@ export class Entity {
 		let performed = false
 
 		if (this.current_actions > 0) {
-			performed = this.actions.doAction(this.action_state, this, actionData)
+			performed = this.actions.doAction(this.action_state, this, actionData);
 		}
         if (performed) {
             this.current_actions -= 1
@@ -53,17 +53,17 @@ export class Entity {
 }
 
 export class Unit extends Entity {
-    constructor(x, y, id) {
-        super(x, y, id);
-		this.actions = new Action(["Move", "Attack"]);
+    constructor(x, y) {
+        super(x, y);
+		this.actions = new Action(["Move", "Attack"], );
 		this.max_actions = 2;
 		this.type = "Unit"
     }
 }
 
 export class Swordfighter extends Unit {
-    constructor(x, y, id) {
-        super(x, y, id);
+    constructor(x, y) {
+        super(x, y);
 		this.max_HP = 3;
 		this.attack_dmg = 2;
 		this.attack_rng = 1;
@@ -74,8 +74,8 @@ export class Swordfighter extends Unit {
 }
 
 export class Archer extends Unit {
-    constructor(x, y, id) {
-        super(x, y, id);
+    constructor(x, y) {
+        super(x, y);
 		this.max_HP = 2;
 		this.attack_dmg = 2;
 		this.attack_rng = 2;
@@ -86,8 +86,8 @@ export class Archer extends Unit {
 }
 
 export class Cavalier extends Unit {
-    constructor(x, y, id) {
-        super(x, y, id);
+    constructor(x, y) {
+        super(x, y);
 		this.max_HP = 5;
 		this.attack_dmg = 2;
 		this.attack_rng = 1;
@@ -98,8 +98,8 @@ export class Cavalier extends Unit {
 }
 
 export class Catapult extends Unit {
-    constructor(x, y, id) {
-        super(x, y, id);
+    constructor(x, y) {
+        super(x, y);
 		this.max_actions = 1;
 		this.max_HP = 7;
 		this.attack_dmg = 3; //but automatically destroys buildings
@@ -111,16 +111,16 @@ export class Catapult extends Unit {
 }
 
 export class Building extends Entity {
-    constructor(x, y, id) {
-        super(x, y, id);
-		this.movement_speed = 0;
+    constructor(x, y) {
+        super(x, y);
+		this.movement_speed = 1; // This doesn't allow it to move, just draws a radius when we've selected an action/icon.
 		this.type = "Building"
     }
 }
 
 export class Farm extends Building {
-    constructor(x, y, id) {
-        super(x, y, id);
+    constructor(x, y) {
+        super(x, y);
 		this.action_array = [];
 		this.max_actions = 0;
 		this.max_HP = 5;
@@ -131,8 +131,8 @@ export class Farm extends Building {
 }
 
 export class Barracks extends Building {
-    constructor(x, y, id) {
-        super(x, y, id);
+    constructor(x, y) {
+        super(x, y);
 		this.actions = new Action(["Spawn"]);
 		this.max_actions = 1;
 		this.max_HP = 5;
@@ -142,8 +142,8 @@ export class Barracks extends Building {
 }
 
 export class Leader extends Entity {
-    constructor(x, y, id) {
-        super(x, y, id);
+    constructor(x, y) {
+        super(x, y);
 		this.actions = new Action(["Move", "Attack", "Build"]);
 
 		this.max_actions = 3;

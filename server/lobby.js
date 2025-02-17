@@ -39,12 +39,12 @@ export class Lobby {
 		// spawn leader farm and barracks for each player
         this.players[0].clearUnits();
         this.players[1].clearUnits();
-        this.players[0].spawnUnit("Leader", 0, 3)
-        this.players[0].spawnUnit("Barracks", 0, 4)
-        this.players[0].spawnUnit("Farm", 0, 2)
-        this.players[1].spawnUnit("Leader", this.maxCoords.x, 3)
-        this.players[1].spawnUnit("Barracks", this.maxCoords.x, 4)
-        this.players[1].spawnUnit("Farm", this.maxCoords.x, 2)
+        this.players[0].spawnUnit("Leader", 0, 3, true)
+        this.players[0].spawnUnit("Barracks", 0, 4, true)
+        this.players[0].spawnUnit("Farm", 0, 2, true)
+        this.players[1].spawnUnit("Leader", this.maxCoords.x, 3, true)
+        this.players[1].spawnUnit("Barracks", this.maxCoords.x, 4, true)
+        this.players[1].spawnUnit("Farm", this.maxCoords.x, 2, true)
 		
 		// start the game
         this.players.forEach((player) => {
