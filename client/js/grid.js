@@ -82,6 +82,7 @@ $(document).ready(function() {
         if (JSON.stringify(previousZoomedIcon) !== JSON.stringify(zoomedIcon)) {
             drawUnitInfo(); //display zoomed icon on mouseover
         }
+        drawUnitStatsOnHover()
     });
 	
  	// Mouse click listeners
@@ -247,9 +248,10 @@ $(document).ready(function() {
 		actionsRemaining = drawPlayerInfoData.player_current_actions;
         baseActions = drawPlayerInfoData.player_base_actions;
         playerName = drawPlayerInfoData.current_player_turn;
-		ctx.fillText('Actions Remaining: ' + actionsRemaining + '/' + baseActions, 10, 30); // The numbers are the x and y coordinates
+        playerNamePossessive = playerName + "'s"
+		ctx.fillText(playerNamePossessive + ' Actions Remaining: ' + actionsRemaining + '/' + baseActions, 10, 30); // The numbers are the x and y coordinates
 		food = drawPlayerInfoData.player_current_food;
-		ctx.fillText("Food: " + food, 10, 70);
+		ctx.fillText(playerNamePossessive + ' Food: ' + food, 10, 70);
         ctx.fillText(playerName + ', Your Turn!', canvas.width/2.25, 30);
     }
 
@@ -306,13 +308,14 @@ $(document).ready(function() {
 
 		//for each action type on the entity, draw the icon
 		loopIteration = 0
-        let unitfont_y = 0
+        let unitfont_y = 120
+        let unitfont_x = 10
         if (entity.actions) {
             for (let actionType of entity.actions.AllowedActions) {
                 loopIteration += 1;
                 let x = 10
                 let y = (loopIteration * 80) + 10;
-                unitfont_y = y
+                unitfont_y = 120 + y
                 let img_width = 75
                 let img_length = 75
                 const img = new Image();
@@ -330,12 +333,63 @@ $(document).ready(function() {
                 icons.push({ActionType: actionType, x: x, y: y, width: img_width, height: img_length});
             }
         }
-        //display unit HP, add more stuff later
+        drawUnitStatsLeft(entity, unitfont_x, unitfont_y);
+	}
+
+    function drawUnitStatsOnHover() {
+        let entity = getEntityAtHex(highlightedHexagon)
+        let playerKey = getPlayerKeyAtHex(highlightedHexagon)
+        let ownership = ""
+        if (!playerKey) {
+            ownership = "who cares, no units here"
+        } else if (playerKey == PLAYERNUMBER) {
+            ownership = "your unit"
+        } else {
+            ownership = "not your unit"
+        }
+        switch(ownership)
+        {
+            case "your unit":
+                if (clickedHexagon) break;
+                drawUnitStatsLeft(entity, 10, 200) //draw unit stats on hover
+                break;
+            case "not your unit":
+                drawUnitStatsRight(entity, -30, 200) //draw unit stats on hover
+                break;
+            default:
+                clearUnitStatsRight()
+                if (clickedHexagon) break;
+                clearUnitStatsLeft()
+                break;
+        }
+    }
+
+    //could make these four functions into just two but i'm tired
+    function drawUnitStatsLeft(entity, x_offset, y_offset) {
+        ctx_units.clearRect(0, 0, canvas_units.width/10, canvas_units.height);  // Clear where we would display stats
         ctx_units.font = '20px Arial'; //I wanted to set the font at the top but it gets overwritten and I don't know why
         ctx_units.fillStyle = 'black';
-		ctx_units.fillText('HP: ' + entity.current_HP + '/' + entity.max_HP, 10, unitfont_y + 120);
-        ctx_units.fillText('Unit Actions: ' + entity.current_actions + '/' + entity.max_actions, 10, unitfont_y + 160);
-	}
+        ctx_units.fillText(entity.subtype, x_offset, y_offset);
+        ctx_units.fillText('HP: ' + entity.current_HP + '/' + entity.max_HP, x_offset, y_offset + 40);
+        ctx_units.fillText('Unit Actions: ' + entity.current_actions + '/' + entity.max_actions, x_offset, y_offset + 80);
+    }
+
+    function drawUnitStatsRight(entity, x_offset, y_offset) {
+        ctx_units.clearRect(canvas_units.width - canvas_units.width/10, 0, canvas_units.width/10, canvas_units.height);  // Clear where we would display stats
+        ctx_units.font = '20px Arial'; //I wanted to set the font at the top but it gets overwritten and I don't know why
+        ctx_units.fillStyle = 'black';
+        ctx_units.fillText(entity.subtype, (canvas_units.width - canvas_units.width/10) - x_offset, y_offset);
+        ctx_units.fillText('HP: ' + entity.current_HP + '/' + entity.max_HP, (canvas_units.width - canvas_units.width/10) - x_offset, y_offset + 40);
+        ctx_units.fillText('Unit Actions: ' + entity.current_actions + '/' + entity.max_actions, (canvas_units.width - canvas_units.width/10) - x_offset, y_offset + 80);
+    }
+
+    function clearUnitStatsLeft() {
+        ctx_units.clearRect(0, 0, canvas_units.width/10, canvas_units.height);  // Clear where we would display stats
+    }
+
+    function clearUnitStatsRight() {
+        ctx_units.clearRect(canvas_units.width - canvas_units.width/10, 0, canvas_units.width/10, canvas_units.height);  // Clear where we would display stats
+    }
 
     //-----------------------------------------------------------
     //MISC FUNCTIONS
@@ -401,11 +455,13 @@ $(document).ready(function() {
 		return null;
     }
 
+    // returns 'player1' or 'player2'
     function getPlayerKeyAtHex(hex) {
 		if (hex && entities[hex.row][hex.col])
 		{
 			return entities[hex.row][hex.col][1];
 		}
+        return false;
     }
 
     function getEntityAtHex(hex) {
@@ -413,6 +469,7 @@ $(document).ready(function() {
 		{
 			return entities[hex.row][hex.col][2];
 		}
+        return false;
     }
 
     function rowColToXandY(col, row) {
